@@ -1,0 +1,36 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "MyTelegram.BotApi.Services.BotMessagePollerService": "Warning",
+      "MyTelegram.BotApi.Services.UpdatesManager": "Warning",
+      "MyTelegram.BotApi.Middleware.BotApiMiddleware": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "BotApi": {
+    "Port": 8081,
+    "LocalMode": true,
+    "MaxFileSize": 2147483648
+  },
+  "RabbitMQ": {
+    "Connections": {
+      "Default": {
+        "HostName": "rabbitmq",
+        "Port": 5672,
+        "UserName": "test",
+        "Password": "test",
+        "VirtualHost": "/"
+      }
+    },
+    "EventBus": {
+      "ClientProvidedName": "MyTelegram.BotApi",
+      "ExchangeName": "MyTelegram.EventBus"
+    }
+  },
+  "MongoDB": {
+    "ConnectionString": "mongodb://mongodb:27017",
+    "DatabaseName": "tg"
+  }
+}

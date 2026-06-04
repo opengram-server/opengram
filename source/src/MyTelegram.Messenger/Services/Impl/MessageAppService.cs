@@ -1,0 +1,885 @@
+using System.Collections.Generic;
+
+using EventFlow.Aggregates.ExecutionResults;namespace MyTelegram.Messenger.Services.Impl;
+
+public class MessageAppService : IMessageAppService, ITransientDependency
+{
+    private readonly IQueryProcessor queryProcessor;
+    private readonly ICommandBus commandBus;
+    private readonly IObjectMapper objectMapper;
+    private readonly IPeerHelper peerHelper;
+    private readonly IPhotoAppService photoAppService;
+    private readonly IChannelAppService channelAppService;
+    private readonly IUserAppService userAppService;
+    private readonly IPrivacyAppService privacyAppService;
+    private readonly IContactAppService contactAppService;
+    private readonly IOffsetHelper offsetHelper;
+    private readonly IIdGenerator idGenerator;
+    private readonly IChatMemberLoader chatMemberLoader;
+    private readonly ILogger<MessageAppService> logger;
+
+    public MessageAppService(
+        IQueryProcessor queryProcessor,
+        ICommandBus commandBus,
+        IObjectMapper objectMapper,
+        IPeerHelper peerHelper,
+        IPhotoAppService photoAppService,
+        IChannelAppService channelAppService,
+        IUserAppService userAppService,
+        IPrivacyAppService privacyAppService,
+        IContactAppService contactAppService,
+        IOffsetHelper offsetHelper,
+        IIdGenerator idGenerator,
+        IChatMemberLoader chatMemberLoader,
+        ILogger<MessageAppService> logger)
+    {
+        this.queryProcessor = queryProcessor;
+        this.commandBus = commandBus;
+        this.objectMapper = objectMapper;
+        this.peerHelper = peerHelper;
+        this.photoAppService = photoAppService;
+        this.channelAppService = channelAppService;
+        this.userAppService = userAppService;
+        this.privacyAppService = privacyAppService;
+        this.contactAppService = contactAppService;
+        this.offsetHelper = offsetHelper;
+        this.idGenerator = idGenerator;
+        this.chatMemberLoader = chatMemberLoader;
+        this.logger = logger;
+    }
+
+    private const string HashtagPattern = "#(\\w+)";
+    private const string UrlPattern = @"(?:^|\s)((https?:\/\/)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/[^\s,.:;!?]*)?)";
+
+    public void CheckBotPermission(long requestUserId, Peer toPeer)
+    {
+        if (peerHelper.IsBotUser(requestUserId) && peerHelper.IsBotUser(toPeer.PeerId))
+        {
+            RpcErrors.RpcErrors400.UserIsBot.ThrowRpcError();
+        }
+    }
+
+    public async Task<bool> CanSendAsPeerAsync(long channelId, long userId)
+    {
+        var channelReadModel = await channelAppService.GetAsync(channelId);
+        var canSendAsPeer = false;
+
+        // Channel: signature: true and hasAdminRights: true and canWriteToChat: true
+        if (channelReadModel is { Broadcast: true, Signatures: true })
+        {
+            var channelAdmin = channelReadModel.AdminList.FirstOrDefault(p => p.UserId == userId);
+            if (channelReadModel.CreatorId == userId || (channelAdmin?.AdminRights.PostMessages ?? false))
+            {
+                canSendAsPeer = true;
+            }
+        }
+
+        if (!canSendAsPeer)
+        {
+            // Super group with linked channel/Public super group
+            if (channelReadModel.MegaGroup && (!string.IsNullOrEmpty(channelReadModel.UserName) ||
+                                               channelReadModel.LinkedChatId != null))
+            {
+                canSendAsPeer = true;
+            }
+        }
+
+        return canSendAsPeer;
+    }
+
+    public async Task<bool> IsValidSendAsPeerAsync(long requestUserId, Peer toPeer, Peer? sendAsPeer)
+    {
+        if (sendAsPeer != null)
+        {
+            if (toPeer.PeerType != MyTelegram.PeerType.Channel)
+            {
+                return false;
+            }
+
+            switch (sendAsPeer.PeerType)
+            {
+                case MyTelegram.PeerType.User:
+                case MyTelegram.PeerType.Self:
+                    if (sendAsPeer.PeerId != requestUserId)
+                    {
+                        return false;
+                    }
+
+                    break;
+
+                case MyTelegram.PeerType.Channel:
+                    var canSendAsPeer = await CanSendAsPeerAsync(toPeer.PeerId, requestUserId);
+                    if (!canSendAsPeer)
+                    {
+                        return false;
+                    }
+
+                    var sendAsChannelReadModel = await channelAppService.GetAsync(sendAsPeer.PeerId);
+
+                    // We can only use the public channels created by the current user as SendAsPeer
+                    if (sendAsChannelReadModel == null! ||
+                        sendAsChannelReadModel.CreatorId != requestUserId ||
+                        (string.IsNullOrEmpty(sendAsChannelReadModel.UserName) &&
+                         sendAsChannelReadModel.LinkedChatId != toPeer.PeerId &&
+                         sendAsChannelReadModel.ChannelId != toPeer.PeerId))
+                    {
+                        return false;
+                    }
+
+                    break;
+            }
+        }
+
+        return true;
+    }
+
+    public async Task CheckSendAsAsync(long requestUserId, Peer toPeer, Peer? sendAsPeer)
+    {
+        var isValid = await IsValidSendAsPeerAsync(requestUserId, toPeer, sendAsPeer);
+        if (!isValid)
+        {
+            RpcErrors.RpcErrors400.SendAsPeerInvalid.ThrowRpcError();
+        }
+    }
+
+    public async Task<GetMessageOutput> GetChannelDifferenceAsync(GetDifferenceInput input)
+    {
+        return await GetMessagesInternalAsync(new GetMessagesQuery(input.OwnerPeerId,
+            MessageType.Unknown,
+            null,
+            input.MessageIds,
+            0,
+            input.Limit,
+            null,
+            null,
+            input.SelfUserId,
+            input.Pts), input.Users, input.Chats);
+    }
+
+    public Task<GetMessageOutput> GetDifferenceAsync(GetDifferenceInput input)
+    {
+        return GetMessagesInternalAsync(new GetMessagesQuery(input.OwnerPeerId,
+            MessageType.Unknown,
+            null,
+            null,
+            0,
+            input.Limit,
+            null,
+            null,
+            input.SelfUserId,
+            input.Pts), input.Users, input.Chats);
+    }
+
+    public Task<GetMessageOutput> GetHistoryAsync(GetHistoryInput input)
+    {
+        return GetMessagesCoreAsync(input);
+    }
+
+    public Task<GetMessageOutput> GetMessagesAsync(GetMessagesInput input)
+    {
+        return GetMessagesCoreAsync(input);
+    }
+
+    public Task<GetMessageOutput> GetRepliesAsync(GetRepliesInput input)
+    {
+        return GetMessagesCoreAsync(input);
+    }
+
+    public Task<GetMessageOutput> SearchAsync(SearchInput input)
+    {
+        return GetMessagesCoreAsync(input);
+    }
+
+    public Task<GetMessageOutput> SearchGlobalAsync(SearchGlobalInput input)
+    {
+        return GetMessagesCoreAsync(input);
+    }
+    public async Task SendMessageAsync(List<SendMessageInput> inputs)
+    {
+        logger.LogInformation("=== SendMessageAsync START, inputs count: {Count}", inputs.Count);
+        
+        if (inputs.Count == 0)
+        {
+            throw new ArgumentException();
+        }
+
+        List<SendMessageItem> sendMessageItems = [];
+        var firstInput = inputs.First();
+        var requestInfo = firstInput.RequestInfo;
+        
+        logger.LogInformation("=== Processing {Count} inputs, first ToPeer: {ToPeer}", inputs.Count, firstInput.ToPeer);
+
+        foreach (var input in inputs)
+        {
+            logger.LogInformation("=== Processing input for peer: {Peer}", input.ToPeer);
+            CheckBotPermission(input.RequestInfo.UserId, input.ToPeer);
+            var item = await CreateSendMessageItemAsync(input);
+            sendMessageItems.Add(item);
+            logger.LogInformation("=== Created SendMessageItem");
+        }
+        
+        logger.LogInformation("=== All items created, count: {Count}", sendMessageItems.Count);
+
+        var command = new StartSendMessageCommand(TempId.New, requestInfo,
+            sendMessageItems,
+            firstInput.ClearDraft,
+            firstInput.IsSendGroupedMessage,
+            firstInput.IsSendQuickReplyMessage);
+
+        logger.LogInformation("Publishing StartSendMessageCommand with {Count} items, ToPeer: {ToPeer}", 
+            sendMessageItems.Count, firstInput.ToPeer);
+        
+        await commandBus.PublishAsync(command, CancellationToken.None);
+        
+        logger.LogInformation("StartSendMessageCommand published successfully");
+    }
+
+    public async Task<SearchPostsResult> SearchPostsAsync(long selfUserId, SearchPostsQuery searchPostsQuery)
+    {
+        var messageReadModels = await queryProcessor.ProcessAsync(searchPostsQuery);
+        HashSet<long> userIds = [];
+        HashSet<long> channelIds = [];
+        AddExtraPeerIds(messageReadModels, userIds, channelIds);
+        var userIdList = userIds.ToList();
+        var userReadModels = await userAppService.GetListAsync(userIdList);
+        var channelReadModels = channelIds.Count == 0
+            ? []
+            : await channelAppService.GetListAsync(channelIds);
+        var channelMemberReadModels = channelReadModels.Count == 0
+            ? []
+            : await queryProcessor.ProcessAsync(
+                new GetChannelMemberListByChannelIdListQuery(selfUserId, channelIds.ToList()));
+        var photoReadModels = await photoAppService.GetPhotosAsync(channelReadModels);
+
+        return new SearchPostsResult(messageReadModels, channelReadModels, channelMemberReadModels, photoReadModels, userReadModels);
+    }
+
+    private async Task<IChannelReadModel?> CheckChannelBannedRightsAsync(SendMessageInput input)
+    {
+        if (input.ToPeer.PeerType != MyTelegram.PeerType.Channel)
+        {
+            return null;
+        }
+
+        var channelReadModel = await channelAppService.GetAsync(input.ToPeer.PeerId);
+        if (channelReadModel!.Broadcast)
+        {
+            var admin = channelReadModel.AdminList.FirstOrDefault(p => p.UserId == input.SenderUserId);
+            if (admin == null || !admin.AdminRights.PostMessages)
+            {
+                RpcErrors.RpcErrors403.ChatWriteForbidden.ThrowRpcError();
+            }
+        }
+
+        var bannedDefaultRights = channelReadModel.DefaultBannedRights ?? ChatBannedRights.CreateDefaultBannedRights();
+        if (bannedDefaultRights.SendMessages)
+        {
+            RpcErrors.RpcErrors403.ChatWriteForbidden.ThrowRpcError();
+        }
+
+        var channelMemberReadModel =
+            await queryProcessor.ProcessAsync(new GetChannelMemberByUserIdQuery(channelReadModel.ChannelId,
+                input.SenderUserId));
+
+
+        if (channelMemberReadModel == null)
+        {
+            if (channelReadModel is { Broadcast: false, LinkedChatId: not null, JoinToSend: false })
+            {
+
+            }
+            else
+            {
+                RpcErrors.RpcErrors403.ChatGuestSendForbidden.ThrowRpcError();
+            }
+        }
+
+        if (channelMemberReadModel != null && channelMemberReadModel.BannedRights != 0)
+        {
+            var memberBannedRights =
+                ChatBannedRights.FromValue(channelMemberReadModel.BannedRights, channelMemberReadModel.UntilDate);
+            if (!string.IsNullOrEmpty(input.Message))
+            {
+                if (memberBannedRights.SendMessages)
+                {
+                    RpcErrors.RpcErrors400.UserBannedInChannel.ThrowRpcError();
+                }
+            }
+
+            if (input.Media != null)
+            {
+                if (memberBannedRights.SendMedia)
+                {
+                    RpcErrors.RpcErrors400.UserBannedInChannel.ThrowRpcError();
+                }
+            }
+        }
+
+        //if (channelReadModel.SlowModeEnabled)
+        //{
+
+        //}
+
+        return channelReadModel;
+    }
+
+    private async Task<Peer?> GetDefaultSendAsAsync(SendMessageInput input)
+    {
+        // Get the default SendAsPeer, follow the following rules
+        // 1.If the client passes sendAs, verify the client's sendAs, if valid, use the value passed by the client
+        // 2.If the client does not pass sendAs, query whether the user has set the default sendAsPeer, if set, use the set value
+        // 3.If the client does not pass a value, the default SendAsPeer is not set, and in the discussion group, use discussion group as SendAsPeer
+        if (input.SendAs != null)
+        {
+            if (await IsValidSendAsPeerAsync(input.RequestInfo.UserId, input.ToPeer, input.SendAs))
+            {
+                return input.SendAs;
+            }
+        }
+        else if (input.ToPeer.PeerType == MyTelegram.PeerType.Channel)
+        {
+            var channelReadModel = await channelAppService.GetAsync(input.ToPeer.PeerId);
+
+            if (!await CanSendAsPeerAsync(input.ToPeer.PeerId, input.RequestInfo.UserId))
+            {
+                var admin = channelReadModel.AdminList.FirstOrDefault(p => p.UserId == input.SenderUserId);
+                if (admin is { AdminRights.Anonymous: true })
+                {
+                    return channelReadModel.ChannelId.ToChannelPeer();
+                }
+
+                return null;
+            }
+            Peer? sendAsPeer;
+
+            var userConfigReadModel = await queryProcessor.ProcessAsync(
+                new GetUserConfigByKeyQuery(input.RequestInfo.UserId, ((int)UserConfigType.SendAsPeer).ToString()));
+            if (userConfigReadModel != null)
+            {
+                if (long.TryParse(userConfigReadModel.Value, out var sendAsPeerId))
+                {
+                    sendAsPeer = peerHelper.GetPeer(sendAsPeerId);
+                    if (await IsValidSendAsPeerAsync(input.RequestInfo.UserId, input.ToPeer, sendAsPeer))
+                    {
+                        return sendAsPeer;
+                    }
+                }
+            }
+
+            if (channelReadModel is { MegaGroup: true, LinkedChatId: not null })
+            {
+                sendAsPeer = channelReadModel.ChannelId.ToChannelPeer();
+                if (await IsValidSendAsPeerAsync(input.RequestInfo.UserId, input.ToPeer, sendAsPeer))
+                {
+                    return sendAsPeer;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<SendMessageItem> CreateSendMessageItemAsync(SendMessageInput input)
+    {
+        //await CheckAccessHashAsync(input);
+        //await CheckSendAsAsync(input);
+        await CheckGlobalPrivacySettingsAsync(input);
+        var channelReadModel = await CheckChannelBannedRightsAsync(input);
+
+        var entities = input.Entities ?? [];
+        var mentionedUserIds = await ProcessMessageEntitiesAsync(input.Message, entities, input.ToPeer);
+        if (entities.Count == 0)
+        {
+            entities = null;
+        }
+        var ownerPeerId = input.ToPeer.PeerType == MyTelegram.PeerType.Channel ? input.ToPeer.PeerId : input.SenderUserId;
+        var replyToMsgId = input.InputReplyTo.ToReplyToMsgId();
+
+        // Reply to group: ToPeerId=input.ToPeerId,SenderUserId=input.UserId
+        // Reply to user:  ToPeerId=Input.UserId,OwnerPeerId=input.ToPeerId,MessageId=replyToMsgId
+
+        var replyToMsgItems =
+            await queryProcessor.ProcessAsync(new GetReplyToMsgIdListQuery(input.ToPeer, input.SenderUserId,
+                replyToMsgId));
+        var idType = IdType.MessageId;
+        var subType = MessageSubType.Normal;
+        var messageActionType = MessageActionType.None;
+        var post = channelReadModel?.Broadcast ?? false;
+        var linkedChannelId = channelReadModel?.Broadcast ?? false ? channelReadModel.LinkedChatId : null;
+        var sendAs = await GetDefaultSendAsAsync(input);
+        string? postAuthor = null;
+        var isPublicPost = channelReadModel is { Broadcast: true, UserName: not null };
+        if (channelReadModel is { Signatures: true, Broadcast: true })
+        {
+            if (sendAs?.PeerType == MyTelegram.PeerType.Channel)
+            {
+                var sendAsChannelReadModel = await channelAppService.GetAsync(sendAs.PeerId);
+                postAuthor = sendAsChannelReadModel.Title;
+            }
+            else
+            {
+                var userReadModel = await userAppService.GetAsync(input.RequestInfo.UserId);
+                postAuthor = $"{userReadModel.FirstName} {userReadModel.LastName}";
+            }
+
+            if (sendAs == null && channelReadModel.SignatureProfiles)
+            {
+                sendAs = input.RequestInfo.UserId.ToUserPeer();
+            }
+        }
+
+        var scheduleDate = input.ScheduleDate.HasValue ? DateTime.UnixEpoch.AddSeconds(input.ScheduleDate.Value) : (DateTime?)null;
+        if (scheduleDate.HasValue)
+        {
+            // If the schedule_date is less than 20 seconds in the future, the message will be sent immediately,
+            // generating a normal updateNewMessage/updateNewChannelMessage.
+            if (scheduleDate.Value - DateTime.UtcNow < TimeSpan.FromSeconds(20))
+            {
+                scheduleDate = null;
+            }
+            else
+            {
+                idType = IdType.ScheduleMessageId;
+            }
+        }
+
+        var pts = 0;
+        MessageReply? reply = null;
+        if (post && linkedChannelId.HasValue)
+        {
+            reply = new MessageReply(linkedChannelId, 0, 0, 0, []);
+        }
+
+        var messageId = await idGenerator.NextIdAsync(idType, ownerPeerId);
+        //var messageId = 0;
+        int? scheduleMessageId = null;
+        if (idType == IdType.ScheduleMessageId)
+        {
+            scheduleMessageId = await idGenerator.NextIdAsync(IdType.ScheduleMessageId, ownerPeerId);
+        }
+
+        var date = DateTime.UtcNow;
+        var dateTimestamp = ((DateTimeOffset)date).ToUnixTimeSeconds();
+        var hashtags = GetHashtags(input.Message);
+        var messageItem = new MessageItem(
+            input.ToPeer with { PeerId = ownerPeerId /*, AccessHash = 0 */ },
+            input.ToPeer,
+            new Peer(MyTelegram.PeerType.User, input.SenderUserId),
+            input.SenderUserId,
+            messageId,
+            input.Message,
+            (int)dateTimestamp,
+            input.RandomId,
+            true,
+            input.SendMessageType,
+            //(MessageType)input.SendMessageType,
+            input.MessageType,
+            subType,
+            input.InputReplyTo,
+            //input.MessageActionData,
+            input.MessageAction,
+            messageActionType,
+            entities,
+            input.Media,
+            input.GroupId,
+            PollId: input.PollId,
+            Post: post,
+            ReplyMarkup: input.ReplyMarkup,
+            TopMsgId: input.TopMsgId,
+            PostAuthor: postAuthor,
+            SendAs: sendAs,
+            Effect: input.Effect,
+            ReplyToMsgItems: replyToMsgItems?.ToList(),
+            LinkedChannelId: linkedChannelId,
+            Pts: pts,
+            Silent: input.Silent,
+            ScheduleDate: scheduleDate.HasValue ? (int?)((DateTimeOffset)scheduleDate.Value).ToUnixTimeSeconds() : null,
+            ScheduleMessageId: scheduleMessageId,
+            Reply: reply,
+            InvertMedia: input.InvertMedia,
+            PublicPosts: isPublicPost,
+            Hashtags: hashtags,
+            MentionedUserIds: mentionedUserIds
+        );
+
+        // Get sender's default history TTL
+        var senderUser = await userAppService.GetAsync(input.SenderUserId);
+        var senderDefaultHistoryTTL = senderUser?.DefaultHistoryTTL;
+
+        // Get chat members for group chats and channels
+        List<long> chatMembers = [];
+        
+        logger.LogWarning("*** CreateSendMessageItemAsync: PeerType={PeerType}, PeerId={PeerId} ***", 
+            input.ToPeer.PeerType, input.ToPeer.PeerId);
+        
+        if (input.ToPeer.PeerType == MyTelegram.PeerType.Chat)
+        {
+            chatMembers = await chatMemberLoader.GetChatMemberUidListAsync(input.ToPeer.PeerId);
+            logger.LogWarning("*** Loaded {Count} chat members for chat {ChatId} ***", chatMembers.Count, input.ToPeer.PeerId);
+        }
+        else if (input.ToPeer.PeerType == MyTelegram.PeerType.Channel)
+        {
+            chatMembers = await chatMemberLoader.GetChannelMemberUidListAsync(input.ToPeer.PeerId);
+            logger.LogWarning("*** Loaded {Count} channel members for channel {ChannelId} ***", chatMembers.Count, input.ToPeer.PeerId);
+        }
+        else if (input.ToPeer.PeerType == MyTelegram.PeerType.User)
+        {
+            // For User peer, add the recipient as chat member for inbox creation
+            chatMembers.Add(input.ToPeer.PeerId);
+            logger.LogWarning("*** Added User {UserId} as chat member for private chat ***", input.ToPeer.PeerId);
+        }
+        else
+        {
+            logger.LogWarning("*** PeerType is unknown, no members to load ***");
+        }
+
+        logger.LogWarning("*** Creating SendMessageItem with {Count} chatMembers ***", chatMembers.Count);
+        var sendMessageItem = new SendMessageItem(messageItem, input.ClearDraft, mentionedUserIds, chatMembers, senderDefaultHistoryTTL);
+
+        return sendMessageItem;
+    }
+
+    public List<string> GetHashtags(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            return [];
+        }
+
+        var matches = Regex.Matches(message, HashtagPattern);
+        var hashtags = new List<string>();
+        const int maxHashtags = 10;
+        foreach (Match match in matches)
+        {
+            if (hashtags.Count > maxHashtags)
+            {
+                break;
+            }
+
+            var hashtag = match.Groups[1].Value;
+            if (!hashtags.Contains(hashtag))
+            {
+                hashtags.Add(hashtag);
+            }
+        }
+
+        return hashtags;
+    }
+
+    private async Task CheckGlobalPrivacySettingsAsync(SendMessageInput input)
+    {
+        if (input.ToPeer.PeerType == MyTelegram.PeerType.User && input.RequestInfo.UserId != input.ToPeer.PeerId)
+        {
+            var globalPrivacySettings = await privacyAppService.GetGlobalPrivacySettingsAsync(input.ToPeer.PeerId);
+            if (globalPrivacySettings?.NewNoncontactPeersRequirePremium ?? false)
+            {
+                var userReadModel = await userAppService.GetAsync(input.RequestInfo.UserId);
+                if (userReadModel.UserId != MyTelegramConsts.OfficialUserId && !userReadModel.Premium)
+                {
+                    var contactType =
+                        await contactAppService.GetContactTypeAsync(input.RequestInfo.UserId, input.ToPeer.PeerId);
+                    if (contactType != MyTelegram.ContactType.Mutual && contactType != MyTelegram.ContactType.TargetUserIsMyContact)
+                    {
+                        RpcErrors.RpcErrors406.PrivacyPremiumRequired.ThrowRpcError();
+                    }
+                }
+            }
+        }
+    }
+
+    public Task<List<long>> ProcessMessageEntitiesAsync(string? message, IList<IMessageEntity>? entities, Peer toPeer)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            return Task.FromResult<List<long>>([]);
+        }
+
+        ProcessMessageEntityHashtag(message, entities);
+        ProcessMessageEntityUrlList(message, entities);
+        return ProcessMessageEntityMentionAsync(message, entities, toPeer);
+    }
+
+    private async Task<List<long>> ProcessMessageEntityMentionAsync(string message, IList<IMessageEntity>? entities, Peer toPeer)
+    {
+        var mentionsAndUserNames = GetMentions(message);
+        var mentions = mentionsAndUserNames.mentions;
+        var mentionedUserNames = mentionsAndUserNames.userNameList;
+        var mentionedUserIds = new List<long>();
+
+        if (entities?.Count > 0)
+        {
+            foreach (var messageEntity in entities)
+            {
+                switch (messageEntity)
+                {
+                    case TInputMessageEntityMentionName inputMessageEntityMentionName:
+                        var userPeer = peerHelper.GetPeer(inputMessageEntityMentionName.UserId);
+                        mentionedUserIds.Add(userPeer.PeerId);
+                        break;
+                    case TMessageEntityMention messageEntityMention:
+                        mentionedUserNames.Add(message.Substring(messageEntityMention.Offset + 1,
+                            messageEntityMention.Length - 1));
+                        break;
+                    case TMessageEntityMentionName messageEntityMentionName:
+                        mentionedUserIds.Add(messageEntityMentionName.UserId);
+                        break;
+                }
+            }
+        }
+
+        if (mentionedUserNames.Count > 0)
+        {
+            entities ??= [];
+            foreach (var messageEntityMention in mentions)
+            {
+                entities.Add(messageEntityMention);
+            }
+        }
+
+        if (toPeer.PeerType == MyTelegram.PeerType.Channel)
+        {
+            var mentionedUsers =
+                await queryProcessor.ProcessAsync(new GetUserNameListByNamesQuery(mentionedUserNames, MyTelegram.PeerType.User));
+            mentionedUserIds.AddRange(mentionedUsers.Select(p => p.PeerId).Distinct().ToList());
+
+            var memberUserIds =
+                await queryProcessor.ProcessAsync(new GetChannelMemberIdListQuery(toPeer.PeerId, mentionedUserIds));
+
+            mentionedUserIds = memberUserIds.ToList();
+        }
+        else
+        {
+            mentionedUserIds = [];
+        }
+
+        return mentionedUserIds;
+    }
+
+    private (List<TMessageEntityMention> mentions, List<string> userNameList) GetMentions(string message)
+    {
+        var pattern = "@(\\w{4,40})";
+        var mentions = new List<TMessageEntityMention>();
+        var matches = Regex.Matches(message, pattern);
+        var userNameList = new List<string>();
+        foreach (Match match in matches)
+        {
+            if (match.Success)
+            {
+                mentions.Add(new TMessageEntityMention
+                {
+                    Offset = match.Index,
+                    Length = match.Length
+                });
+                userNameList.Add(match.Value[1..]);
+            }
+        }
+
+        return (mentions, userNameList);
+    }
+
+    private void ProcessMessageEntityUrlList(string message, IList<IMessageEntity>? entities)
+    {
+        var matches = Regex.Matches(message, UrlPattern);
+        foreach (Match match in matches)
+        {
+            if (match.Success)
+            {
+                var entity = new TMessageEntityUrl
+                {
+                    Offset = match.Index,
+                    Length = match.Length
+                };
+                entities ??= [];
+                entities.Add(entity);
+            }
+        }
+    }
+
+    private void ProcessMessageEntityHashtag(string message, IList<IMessageEntity>? entities)
+    {
+        var hashtagMatches = Regex.Matches(message, HashtagPattern);
+        foreach (Match match in hashtagMatches)
+        {
+            if (match.Success)
+            {
+                var entity = new TMessageEntityHashtag
+                {
+                    Offset = match.Index,
+                    Length = match.Length
+                };
+                entities ??= [];
+                entities.Add(entity);
+            }
+        }
+    }
+
+    private Task<GetMessageOutput> GetMessagesCoreAsync<TRequest>(TRequest input)
+        where TRequest : GetPagedListInput
+    {
+        var offset = offsetHelper.GetOffsetInfo(input);
+        var query = objectMapper.Map<TRequest, GetMessagesQuery>(input);
+        query.Offset = offset;
+
+        return GetMessagesInternalAsync(query);
+    }
+
+    private async Task<GetMessageOutput> GetMessagesInternalAsync(GetMessagesQuery query,
+        IReadOnlyCollection<long>? users = null,
+        IReadOnlyCollection<long>? chats = null)
+    {
+        var messageList = await queryProcessor.ProcessAsync(query);
+        HashSet<long> userIds = users?.ToHashSet() ?? [];
+        HashSet<long> channelIds = chats?.ToHashSet() ?? [];
+        userIds.Add(query.SelfUserId);
+
+        AddExtraPeerIds(messageList, userIds, channelIds);
+        var userIdList = userIds.ToList();
+
+        var userList = await userAppService.GetListAsync(userIdList);
+
+        var channelList = channelIds.Count == 0
+            ? []
+            : await channelAppService.GetListAsync(channelIds);
+
+        var contactList = await queryProcessor
+            .ProcessAsync(new GetContactListQuery(query.SelfUserId, userIdList));
+
+        var photoIds = new List<long>();
+        photoIds.AddRange(channelList.Select(p => p.PhotoId ?? 0));
+        photoIds.AddRange(userList.Select(p => p.PersonalPhotoId ?? 0));
+        photoIds.AddRange(userList.Select(p => p.ProfilePhotoId ?? 0));
+        photoIds.AddRange(userList.Select(p => p.FallbackPhotoId ?? 0));
+        photoIds.AddRange(contactList.Select(p => p.PhotoId ?? 0));
+        photoIds.RemoveAll(p => p == 0);
+
+        var photoList = await photoAppService.GetListAsync(photoIds);
+
+        IReadOnlyCollection<long> joinedChannelIdList = new List<long>();
+        if (channelIds.Count > 0)
+        {
+            joinedChannelIdList = await queryProcessor
+                .ProcessAsync(new GetJoinedChannelIdListQuery(query.SelfUserId, [.. channelIds]));
+        }
+
+        var privacyList = await privacyAppService.GetPrivacyListAsync(userIdList);
+        IReadOnlyCollection<IChannelMemberReadModel> channelMemberList = new List<IChannelMemberReadModel>();
+        if (joinedChannelIdList.Count > 0)
+        {
+            channelMemberList = await queryProcessor
+                .ProcessAsync(
+                    new GetChannelMemberListByChannelIdListQuery(query.SelfUserId, joinedChannelIdList.ToList()));
+        }
+
+        var pts = query.Pts;
+        if (pts == 0 && messageList.Count > 0)
+        {
+            pts = messageList.Max(p => p.Pts);
+        }
+
+        var pollIdList = messageList.Where(p => p.PollId.HasValue).Select(p => p.PollId!.Value).ToList();
+        IReadOnlyCollection<IPollReadModel>? pollReadModels = null;
+        IReadOnlyCollection<IPollAnswerVoterReadModel>? chosenOptions = null;
+
+        if (pollIdList.Count > 0)
+        {
+            pollReadModels = await queryProcessor.ProcessAsync(new GetPollsQuery(pollIdList));
+            chosenOptions = await queryProcessor
+                .ProcessAsync(new GetChosenVoteAnswersQuery(pollIdList, query.SelfUserId));
+        }
+
+        return new GetMessageOutput(channelList,
+            channelMemberList,
+            [],
+            contactList,
+            joinedChannelIdList,
+            messageList,
+            privacyList,
+            userList,
+            photoList,
+            pollReadModels,
+            chosenOptions,
+            [],
+            query.Limit == messageList.Count,
+            query.IsSearchGlobal,
+            pts,
+            query.SelfUserId,
+            query.Limit,
+            query.Offset
+        );
+    }
+
+    public (HashSet<long> userIds, HashSet<long> channelIds) GetExtraPeerIds(
+        IReadOnlyCollection<IMessageReadModel> messageReadModels)
+    {
+        var userIds = new HashSet<long>();
+        var channelIds = new HashSet<long>();
+        AddExtraPeerIds(messageReadModels, userIds, channelIds);
+
+        return (userIds, channelIds);
+    }
+
+    private void AddExtraPeerIds(IReadOnlyCollection<IMessageReadModel> messageReadModels, HashSet<long> userIds,
+        HashSet<long> channelIds)
+    {
+        void AddPeerIdIfNeeded(Peer? peer)
+        {
+            switch (peer?.PeerType)
+            {
+                case MyTelegram.PeerType.Channel:
+                    channelIds.Add(peer.PeerId);
+                    break;
+
+                case MyTelegram.PeerType.User:
+                    userIds.Add(peer.PeerId);
+                    break;
+            }
+        }
+
+        foreach (var messageReadModel in messageReadModels)
+        {
+            AddPeerIdIfNeeded(messageReadModel.SendAs);
+            AddPeerIdIfNeeded(messageReadModel.FwdHeader?.SavedFromPeer);
+
+            var fwd = messageReadModel.FwdHeader;
+            AddPeerIdIfNeeded(fwd?.FromId);
+            AddPeerIdIfNeeded(fwd?.SavedFromId);
+            AddPeerIdIfNeeded(fwd?.SavedFromPeer);
+            AddPeerIdIfNeeded(messageReadModel.SendAs);
+            var senderPeer = peerHelper.GetPeer(messageReadModel.SenderPeerId);
+            AddPeerIdIfNeeded(senderPeer);
+
+            switch (messageReadModel.ToPeerType)
+            {
+                case MyTelegram.PeerType.Channel:
+                    channelIds.Add(messageReadModel.ToPeerId);
+                    break;
+
+                case MyTelegram.PeerType.User:
+                    userIds.Add(messageReadModel.ToPeerId);
+                    break;
+            }
+
+            switch (messageReadModel.MessageAction)
+            {
+                case TMessageActionChatAddUser messageActionChatAddUser:
+                    foreach (var userId in messageActionChatAddUser.Users)
+                    {
+                        userIds.Add(userId);
+                    }
+                    break;
+
+                case TMessageActionChatJoinedByLink messageActionChatJoinedByLink:
+                    userIds.Add(messageActionChatJoinedByLink.InviterId);
+                    break;
+
+                case TMessageActionChatJoinedByRequest:
+
+                    break;
+
+                case TMessageActionChatDeleteUser messageActionChatDeleteUser:
+                    userIds.Add(messageActionChatDeleteUser.UserId);
+                    break;
+            }
+        }
+    }
+}

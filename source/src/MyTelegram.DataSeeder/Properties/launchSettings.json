@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MyTelegram.DataSeeder": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

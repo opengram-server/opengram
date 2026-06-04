@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="MessagePack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyTelegram.Domain\MyTelegram.Domain.csproj" />
+    <ProjectReference Include="..\MyTelegram.Domain.Shared\MyTelegram.Domain.Shared.csproj" />
+    <ProjectReference Include="..\MyTelegram.Services\MyTelegram.Services.csproj" />
+    <ProjectReference Include="..\MyTelegram.Queries\MyTelegram.Queries.csproj" />
+    <ProjectReference Include="..\MyTelegram.EventFlow.MongoDB\MyTelegram.EventFlow.MongoDB.csproj" />
+    <ProjectReference Include="..\MyTelegram.EventBus.RabbitMQ\MyTelegram.EventBus.RabbitMQ.csproj" />
+    <ProjectReference Include="..\MyTelegram.Messenger\MyTelegram.Messenger.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+//import "google/protobuf/empty.proto";
+
+option csharp_namespace = "MyTelegram.GrpcService";
+
+package MyTelegram.GrpcService;
+
+service BotService {
+	rpc GetBotInfo(.MyTelegram.GrpcService.GetBotInfoRequest) returns (.MyTelegram.GrpcService.GetBotInfoResponse);
+}
+
+message GetBotInfoRequest{
+	int64 BotUserId=1;
+}
+
+message GetBotInfoResponse{
+	int64 BotUserId=1;
+	bool AllJoinToGroups=2;
+	bool AllowAccessGroupMessages=3;
+	string UserName=4;
+	string Description=5;
+	string About=6;
+	repeated BotCommand Commands=7;
+}
+
+message BotCommand{
+	string Command=1;
+	string Description=2;
+}

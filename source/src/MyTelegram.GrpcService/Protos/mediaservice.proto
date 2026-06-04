@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+option csharp_namespace = "MyTelegram.GrpcService";
+
+package MyTelegram.GrpcService;
+
+service MediaService {
+	//rpc GetFileMetadata(.MyTelegram.GrpcService.GetFileMetadataRequest) returns(.MyTelegram.GrpcService.GetFileMetadataResponse);
+	rpc SaveEncryptedFile(.MyTelegram.GrpcService.SaveEncryptedFileRequest) returns(.MyTelegram.GrpcService.SaveEncryptedFileResponse);
+	rpc SavePhoto(.MyTelegram.GrpcService.SavePhotoRequest)returns(.MyTelegram.GrpcService.SavePhotoResponse);
+	rpc SaveMedia(.MyTelegram.GrpcService.SaveMediaRequest)returns (.MyTelegram.GrpcService.SaveMediaResponse);
+	rpc SaveStickerFile(.MyTelegram.GrpcService.SaveStickerFileRequest) returns(.MyTelegram.GrpcService.SaveStickerFileResponse);
+	rpc CreateDocument(.MyTelegram.GrpcService.CreateDocumentRequest) returns(.MyTelegram.GrpcService.CreateDocumentResponse);
+	rpc SaveFile(.MyTelegram.GrpcService.SaveFileDataRequest) returns (.MyTelegram.GrpcService.SaveFileDataResponse);
+	rpc Exists(.MyTelegram.GrpcService.CheckFileExistsRequest) returns (.MyTelegram.GrpcService.CheckFileExistsResponse);
+}
+
+message GetFileMetadataRequest{
+	int64 fileId=1;
+}
+
+message GetFileMetadataResponse{
+ //int64 fileId=1;
+ int64 volumeId=2;
+ int64 serverFileId=3;
+ int64 accessHash=4;
+ int32 size=5;
+ int32 localId=6;
+ int32 date=7;
+ string mimeType=8;
+ int64 thumbFileId=9;
+ bytes attributes=10;
+ bytes thumbs=11;
+}
+
+message SavePhotoRequest{
+	int64 reqMsgId=1;
+	int64 fileId=2;
+	bool hasVideo=3;
+	double videoStartTs=4;
+	int32 parts=5;
+	string name=6;
+	string md5=7;
+	optional bytes videoEmojiMarkup=8;
+	int64 userId=9;
+	bool isProfilePhoto=10;
+}
+
+message SavePhotoResponse{
+	//int64 serverFileId=1;	
+	//int64 accessHash=2;
+	//int32 date=3;
+	//int32 size=4;
+	//int32 height=5;
+	//int32 width=6;
+	bytes photo=1;
+	int64 photoId=2;
+	int64 size=3;
+}
+
+message SaveMediaRequest{
+	bytes media=1;
+	int64 userId=2;
+}
+
+message SaveMediaResponse{
+	bytes media=1;
+}
+
+message SaveEncryptedFileRequest{
+	bytes encryptedFile=1;
+	int64 reqMsgId=2;
+}
+
+message SaveEncryptedFileResponse{
+	//bytes encryptedFile=1;
+	int64 accessHash=1;
+	int32 dcId=2;
+	int64 id=3;
+	int32 keyFingerprint=4;
+	int64 size=5;
+}
+
+message SaveStickerFileRequest{
+	int64 stickerSetId=1;
+	int64 stickerSetAccessHash=2;	
+	int64 stickerId=3;
+	string mimeType=4;
+	int32 size=5;
+	bytes data=6;
+	string thumbSize=7;
+	string emoji=8;
+	bool isAnimated=9;
+	int64 accessHash=10;
+	bytes fileReference=11;
+	string thumb=12;
+	string videoThumb=13;
+	//int32 StickerFileType=13;//1.sticker thumb 2.sticker  3.sticker thumb 4.sticker video thumb
+	bool createMetadata=14;
+}
+
+message SaveStickerFileResponse{
+	bool success=1;
+}
+
+message CreateDocumentRequest{
+	int64 stickerSetId=1;
+	int64 stickerSetAccessHash=2;	
+	int64 stickerId=3;
+	int64 accessHash=4;
+	string mimeType=5;
+	int32 size=6;
+	string thumbSize=7;
+	string emoji=8;
+	bool isAnimated=9;
+	string thumb=10;
+	string videoThumb=11;
+	bytes fileReference=12;
+	string attributeFileName=13;
+	int32 stickerType=14;
+}
+
+message CreateDocumentResponse{
+	bool success=1;
+}
+
+message SaveFileDataRequest{
+	int64 id=1;
+	int64 accessHash=2;
+	bytes data=3;
+	string thumbSize=4;
+}
+
+message SaveFileDataResponse{
+	bool success=1;
+}
+
+message CheckFileExistsRequest{
+	string fileName=1;
+}
+
+message CheckFileExistsResponse{
+	bool exists=1;
+}

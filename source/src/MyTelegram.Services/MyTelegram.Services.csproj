@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cube.Timer" />
+    <ProjectReference Include="..\MyTelegram.Core\MyTelegram.Core.csproj" />
+    <ProjectReference Include="..\MyTelegram.Domain.Shared\MyTelegram.Domain.Shared.csproj" />
+    <ProjectReference Include="..\MyTelegram.EventBus.RabbitMQ\MyTelegram.EventBus.RabbitMQ.csproj" />
+    <ProjectReference Include="..\MyTelegram.EventBus\MyTelegram.EventBus.csproj" />
+    <ProjectReference Include="..\MyTelegram.EventFlow\MyTelegram.EventFlow.csproj" />
+    <ProjectReference Include="..\MyTelegram.Schema\MyTelegram.Schema.csproj" />
+
+    <PackageReference Include="EventFlow" />
+    <PackageReference Include="SharpZipLib" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Fody">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

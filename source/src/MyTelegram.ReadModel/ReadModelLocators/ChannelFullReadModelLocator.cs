@@ -1,0 +1,41 @@
+﻿using MyTelegram.Domain.Events.GroupCall;
+
+namespace MyTelegram.ReadModel.ReadModelLocators;
+
+public class ChannelFullReadModelLocator : IChannelFullReadModelLocator, ITransientDependency
+{
+    public IEnumerable<string> GetReadModelIds(IDomainEvent domainEvent)
+    {
+        var aggregateEvent = domainEvent.GetAggregateEvent();
+        if (domainEvent.AggregateType == typeof(ChannelAggregate))
+        {
+            yield return domainEvent.GetIdentity().Value;
+        } else
+        {
+            switch (aggregateEvent)
+            {
+                case ChannelMemberJoinedEvent channelMemberJoinedEvent:
+                    yield return ChannelId.Create(channelMemberJoinedEvent.ChannelId).Value;
+                    break;
+                case ChannelMemberLeftEvent channelMemberLeftEvent:
+                    yield return ChannelId.Create(channelMemberLeftEvent.ChannelId).Value;
+                    break;
+                case ChannelMemberBannedRightsChangedEvent channelMemberBannedRightsChangedEvent:
+                    yield return ChannelId.Create(channelMemberBannedRightsChangedEvent.ChannelId).Value;
+                    break;
+                case GroupCallCreatedEvent groupCallCreatedEvent:
+                    if (groupCallCreatedEvent.PeerType == PeerType.Channel)
+                    {
+                        yield return ChannelId.Create(groupCallCreatedEvent.PeerId).Value;
+                    }
+                    break;
+                case GroupCallDiscardedEvent groupCallDiscardedEvent:
+                    if (groupCallDiscardedEvent.PeerType == PeerType.Channel)
+                    {
+                        yield return ChannelId.Create(groupCallDiscardedEvent.PeerId).Value;
+                    }
+                    break;
+            }
+        }
+    }
+}

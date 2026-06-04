@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/star.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Star Gifts Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;700;900&display=swap"
+    rel="stylesheet">
+  <script>
+    // Set theme BEFORE first paint to avoid flash/jump
+    (function () {
+      try {
+        var t = localStorage.getItem('void-theme');
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="custom-cursor"></div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

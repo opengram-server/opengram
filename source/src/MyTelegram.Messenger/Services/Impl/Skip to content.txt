@@ -1,0 +1,901 @@
+Skip to content
+
+## Navigation Menu
+
+[Sign in](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fteamgram%2Fteamgram-server)
+- PlatformAI CODE CREATIONGitHub CopilotWrite better code with AIGitHub SparkBuild and deploy intelligent appsGitHub ModelsManage and compare promptsMCP RegistryNewDiscover and integrate external toolsDEVELOPER WORKFLOWSActionsAutomate any workflowCodespacesInstant dev environmentsIssuesPlan and track workCode ReviewManage code changesAPPLICATION SECURITYGitHub Advanced SecurityFind and fix vulnerabilitiesCode securitySecure your code as you buildSecret protectionStop leaks before they startEXPLOREWhy GitHubDocumentationBlogChangelogMarketplace[View all features](https://github.com/features)
+- AI CODE CREATIONGitHub CopilotWrite better code with AIGitHub SparkBuild and deploy intelligent appsGitHub ModelsManage and compare prompts[MCP RegistryNewDiscover and integrate external tools](https://github.com/mcp)
+- [GitHub CopilotWrite better code with AI](https://github.com/features/copilot)
+- [GitHub SparkBuild and deploy intelligent apps](https://github.com/features/spark)
+- [GitHub ModelsManage and compare prompts](https://github.com/features/models)
+- [MCP RegistryNewDiscover and integrate external tools](https://github.com/mcp)
+- DEVELOPER WORKFLOWSActionsAutomate any workflowCodespacesInstant dev environmentsIssuesPlan and track work[Code ReviewManage code changes](https://github.com/features/code-review)
+- [ActionsAutomate any workflow](https://github.com/features/actions)
+- [CodespacesInstant dev environments](https://github.com/features/codespaces)
+- [IssuesPlan and track work](https://github.com/features/issues)
+- [Code ReviewManage code changes](https://github.com/features/code-review)
+- APPLICATION SECURITYGitHub Advanced SecurityFind and fix vulnerabilitiesCode securitySecure your code as you build[Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- [GitHub Advanced SecurityFind and fix vulnerabilities](https://github.com/security/advanced-security)
+- [Code securitySecure your code as you build](https://github.com/security/advanced-security/code-security)
+- [Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- EXPLOREWhy GitHubDocumentationBlogChangelog[Marketplace](https://github.com/marketplace)
+- [Why GitHub](https://github.com/why-github)
+- [Documentation](https://docs.github.com)
+- [Blog](https://github.blog)
+- [Changelog](https://github.blog/changelog)
+- [Marketplace](https://github.com/marketplace)
+- SolutionsBY COMPANY SIZEEnterprisesSmall and medium teamsStartupsNonprofitsBY USE CASEApp ModernizationDevSecOpsDevOpsCI/CDView all use casesBY INDUSTRYHealthcareFinancial servicesManufacturingGovernmentView all industries[View all solutions](https://github.com/solutions)
+- BY COMPANY SIZEEnterprisesSmall and medium teamsStartups[Nonprofits](https://github.com/solutions/industry/nonprofits)
+- [Enterprises](https://github.com/enterprise)
+- [Small and medium teams](https://github.com/team)
+- [Startups](https://github.com/enterprise/startups)
+- [Nonprofits](https://github.com/solutions/industry/nonprofits)
+- BY USE CASEApp ModernizationDevSecOpsDevOpsCI/CD[View all use cases](https://github.com/solutions/use-case)
+- [App Modernization](https://github.com/solutions/use-case/app-modernization)
+- [DevSecOps](https://github.com/solutions/use-case/devsecops)
+- [DevOps](https://github.com/solutions/use-case/devops)
+- [CI/CD](https://github.com/solutions/use-case/ci-cd)
+- [View all use cases](https://github.com/solutions/use-case)
+- BY INDUSTRYHealthcareFinancial servicesManufacturingGovernment[View all industries](https://github.com/solutions/industry)
+- [Healthcare](https://github.com/solutions/industry/healthcare)
+- [Financial services](https://github.com/solutions/industry/financial-services)
+- [Manufacturing](https://github.com/solutions/industry/manufacturing)
+- [Government](https://github.com/solutions/industry/government)
+- [View all industries](https://github.com/solutions/industry)
+- ResourcesEXPLORE BY TOPICAISoftware DevelopmentDevOpsSecurityView all topicsEXPLORE BY TYPECustomer storiesEvents & webinarsEbooks & reportsBusiness insightsGitHub SkillsSUPPORT & SERVICESDocumentationCustomer supportCommunity forumTrust center[Partners](https://github.com/partners)
+- EXPLORE BY TOPICAISoftware DevelopmentDevOpsSecurity[View all topics](https://github.com/resources/articles)
+
+## Navigation Menu
+
+- [AI](https://github.com/resources/articles?topic=ai)
+- [Software Development](https://github.com/resources/articles?topic=software-development)
+- [DevOps](https://github.com/resources/articles?topic=devops)
+- [Security](https://github.com/resources/articles?topic=security)
+- [View all topics](https://github.com/resources/articles)
+- EXPLORE BY TYPECustomer storiesEvents & webinarsEbooks & reportsBusiness insights[GitHub Skills](https://skills.github.com)
+- [Customer stories](https://github.com/customer-stories)
+- [Events & webinars](https://github.com/resources/events)
+- [Ebooks & reports](https://github.com/resources/whitepapers)
+- [Business insights](https://github.com/solutions/executive-insights)
+- [GitHub Skills](https://skills.github.com)
+- SUPPORT & SERVICESDocumentationCustomer supportCommunity forumTrust center[Partners](https://github.com/partners)
+- [Documentation](https://docs.github.com)
+- [Customer support](https://support.github.com)
+- [Community forum](https://github.com/orgs/community/discussions)
+- [Trust center](https://github.com/trust-center)
+- [Partners](https://github.com/partners)
+- Open SourceCOMMUNITYGitHub SponsorsFund open source developersPROGRAMSSecurity LabMaintainer CommunityAcceleratorArchive ProgramREPOSITORIESTopicsTrending[Collections](https://github.com/collections)
+- COMMUNITY[GitHub SponsorsFund open source developers](https://github.com/sponsors)
+- [GitHub SponsorsFund open source developers](https://github.com/sponsors)
+- PROGRAMSSecurity LabMaintainer CommunityAccelerator[Archive Program](https://archiveprogram.github.com)
+- [Security Lab](https://securitylab.github.com)
+- [Maintainer Community](https://maintainers.github.com)
+- [Accelerator](https://github.com/accelerator)
+- [Archive Program](https://archiveprogram.github.com)
+- REPOSITORIESTopicsTrending[Collections](https://github.com/collections)
+- [Topics](https://github.com/topics)
+- [Trending](https://github.com/trending)
+- [Collections](https://github.com/collections)
+- EnterpriseENTERPRISE SOLUTIONSEnterprise platformAI-powered developer platformAVAILABLE ADD-ONSGitHub Advanced SecurityEnterprise-grade security featuresCopilot for BusinessEnterprise-grade AI features[Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+- ENTERPRISE SOLUTIONS[Enterprise platformAI-powered developer platform](https://github.com/enterprise)
+- [Enterprise platformAI-powered developer platform](https://github.com/enterprise)
+- AVAILABLE ADD-ONSGitHub Advanced SecurityEnterprise-grade security featuresCopilot for BusinessEnterprise-grade AI features[Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+- [GitHub Advanced SecurityEnterprise-grade security features](https://github.com/security/advanced-security)
+- [Copilot for BusinessEnterprise-grade AI features](https://github.com/features/copilot/copilot-business)
+- [Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+- [Pricing](https://github.com/pricing)
+- AI CODE CREATIONGitHub CopilotWrite better code with AIGitHub SparkBuild and deploy intelligent appsGitHub ModelsManage and compare prompts[MCP RegistryNewDiscover and integrate external tools](https://github.com/mcp)
+- [GitHub CopilotWrite better code with AI](https://github.com/features/copilot)
+- [GitHub SparkBuild and deploy intelligent apps](https://github.com/features/spark)
+- [GitHub ModelsManage and compare prompts](https://github.com/features/models)
+- [MCP RegistryNewDiscover and integrate external tools](https://github.com/mcp)
+- DEVELOPER WORKFLOWSActionsAutomate any workflowCodespacesInstant dev environmentsIssuesPlan and track work[Code ReviewManage code changes](https://github.com/features/code-review)
+- [ActionsAutomate any workflow](https://github.com/features/actions)
+- [CodespacesInstant dev environments](https://github.com/features/codespaces)
+- [IssuesPlan and track work](https://github.com/features/issues)
+- [Code ReviewManage code changes](https://github.com/features/code-review)
+- APPLICATION SECURITYGitHub Advanced SecurityFind and fix vulnerabilitiesCode securitySecure your code as you build[Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- [GitHub Advanced SecurityFind and fix vulnerabilities](https://github.com/security/advanced-security)
+- [Code securitySecure your code as you build](https://github.com/security/advanced-security/code-security)
+
+## Navigation Menu
+
+- [Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- EXPLOREWhy GitHubDocumentationBlogChangelog[Marketplace](https://github.com/marketplace)
+- [Why GitHub](https://github.com/why-github)
+- [Documentation](https://docs.github.com)
+- [Blog](https://github.blog)
+- [Changelog](https://github.blog/changelog)
+- [Marketplace](https://github.com/marketplace)
+- [GitHub CopilotWrite better code with AI](https://github.com/features/copilot)
+- [GitHub SparkBuild and deploy intelligent apps](https://github.com/features/spark)
+- [GitHub ModelsManage and compare prompts](https://github.com/features/models)
+- [MCP RegistryNewDiscover and integrate external tools](https://github.com/mcp)
+[GitHub CopilotWrite better code with AI](https://github.com/features/copilot)
+[GitHub SparkBuild and deploy intelligent apps](https://github.com/features/spark)
+[GitHub ModelsManage and compare prompts](https://github.com/features/models)
+[MCP RegistryNewDiscover and integrate external tools](https://github.com/mcp)
+- [ActionsAutomate any workflow](https://github.com/features/actions)
+- [CodespacesInstant dev environments](https://github.com/features/codespaces)
+- [IssuesPlan and track work](https://github.com/features/issues)
+- [Code ReviewManage code changes](https://github.com/features/code-review)
+[ActionsAutomate any workflow](https://github.com/features/actions)
+[CodespacesInstant dev environments](https://github.com/features/codespaces)
+[IssuesPlan and track work](https://github.com/features/issues)
+[Code ReviewManage code changes](https://github.com/features/code-review)
+- [GitHub Advanced SecurityFind and fix vulnerabilities](https://github.com/security/advanced-security)
+- [Code securitySecure your code as you build](https://github.com/security/advanced-security/code-security)
+- [Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+[GitHub Advanced SecurityFind and fix vulnerabilities](https://github.com/security/advanced-security)
+[Code securitySecure your code as you build](https://github.com/security/advanced-security/code-security)
+[Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- [Why GitHub](https://github.com/why-github)
+- [Documentation](https://docs.github.com)
+- [Blog](https://github.blog)
+- [Changelog](https://github.blog/changelog)
+- [Marketplace](https://github.com/marketplace)
+[Why GitHub](https://github.com/why-github)
+[Documentation](https://docs.github.com)
+[Blog](https://github.blog)
+[Changelog](https://github.blog/changelog)
+[Marketplace](https://github.com/marketplace)
+[View all features](https://github.com/features)
+- BY COMPANY SIZEEnterprisesSmall and medium teamsStartups[Nonprofits](https://github.com/solutions/industry/nonprofits)
+- [Enterprises](https://github.com/enterprise)
+- [Small and medium teams](https://github.com/team)
+- [Startups](https://github.com/enterprise/startups)
+- [Nonprofits](https://github.com/solutions/industry/nonprofits)
+- BY USE CASEApp ModernizationDevSecOpsDevOpsCI/CD[View all use cases](https://github.com/solutions/use-case)
+- [App Modernization](https://github.com/solutions/use-case/app-modernization)
+- [DevSecOps](https://github.com/solutions/use-case/devsecops)
+- [DevOps](https://github.com/solutions/use-case/devops)
+- [CI/CD](https://github.com/solutions/use-case/ci-cd)
+- [View all use cases](https://github.com/solutions/use-case)
+- BY INDUSTRYHealthcareFinancial servicesManufacturingGovernment[View all industries](https://github.com/solutions/industry)
+- [Healthcare](https://github.com/solutions/industry/healthcare)
+- [Financial services](https://github.com/solutions/industry/financial-services)
+- [Manufacturing](https://github.com/solutions/industry/manufacturing)
+- [Government](https://github.com/solutions/industry/government)
+- [View all industries](https://github.com/solutions/industry)
+- [Enterprises](https://github.com/enterprise)
+- [Small and medium teams](https://github.com/team)
+- [Startups](https://github.com/enterprise/startups)
+- [Nonprofits](https://github.com/solutions/industry/nonprofits)
+[Enterprises](https://github.com/enterprise)
+[Small and medium teams](https://github.com/team)
+[Startups](https://github.com/enterprise/startups)
+[Nonprofits](https://github.com/solutions/industry/nonprofits)
+- [App Modernization](https://github.com/solutions/use-case/app-modernization)
+
+## Navigation Menu
+
+- [DevSecOps](https://github.com/solutions/use-case/devsecops)
+- [DevOps](https://github.com/solutions/use-case/devops)
+- [CI/CD](https://github.com/solutions/use-case/ci-cd)
+- [View all use cases](https://github.com/solutions/use-case)
+[App Modernization](https://github.com/solutions/use-case/app-modernization)
+[DevSecOps](https://github.com/solutions/use-case/devsecops)
+[DevOps](https://github.com/solutions/use-case/devops)
+[CI/CD](https://github.com/solutions/use-case/ci-cd)
+[View all use cases](https://github.com/solutions/use-case)
+- [Healthcare](https://github.com/solutions/industry/healthcare)
+- [Financial services](https://github.com/solutions/industry/financial-services)
+- [Manufacturing](https://github.com/solutions/industry/manufacturing)
+- [Government](https://github.com/solutions/industry/government)
+- [View all industries](https://github.com/solutions/industry)
+[Healthcare](https://github.com/solutions/industry/healthcare)
+[Financial services](https://github.com/solutions/industry/financial-services)
+[Manufacturing](https://github.com/solutions/industry/manufacturing)
+[Government](https://github.com/solutions/industry/government)
+[View all industries](https://github.com/solutions/industry)
+[View all solutions](https://github.com/solutions)
+- EXPLORE BY TOPICAISoftware DevelopmentDevOpsSecurity[View all topics](https://github.com/resources/articles)
+- [AI](https://github.com/resources/articles?topic=ai)
+- [Software Development](https://github.com/resources/articles?topic=software-development)
+- [DevOps](https://github.com/resources/articles?topic=devops)
+- [Security](https://github.com/resources/articles?topic=security)
+- [View all topics](https://github.com/resources/articles)
+- EXPLORE BY TYPECustomer storiesEvents & webinarsEbooks & reportsBusiness insights[GitHub Skills](https://skills.github.com)
+- [Customer stories](https://github.com/customer-stories)
+- [Events & webinars](https://github.com/resources/events)
+- [Ebooks & reports](https://github.com/resources/whitepapers)
+- [Business insights](https://github.com/solutions/executive-insights)
+- [GitHub Skills](https://skills.github.com)
+- SUPPORT & SERVICESDocumentationCustomer supportCommunity forumTrust center[Partners](https://github.com/partners)
+- [Documentation](https://docs.github.com)
+- [Customer support](https://support.github.com)
+- [Community forum](https://github.com/orgs/community/discussions)
+- [Trust center](https://github.com/trust-center)
+- [Partners](https://github.com/partners)
+- [AI](https://github.com/resources/articles?topic=ai)
+- [Software Development](https://github.com/resources/articles?topic=software-development)
+- [DevOps](https://github.com/resources/articles?topic=devops)
+- [Security](https://github.com/resources/articles?topic=security)
+- [View all topics](https://github.com/resources/articles)
+[AI](https://github.com/resources/articles?topic=ai)
+[Software Development](https://github.com/resources/articles?topic=software-development)
+[DevOps](https://github.com/resources/articles?topic=devops)
+[Security](https://github.com/resources/articles?topic=security)
+[View all topics](https://github.com/resources/articles)
+- [Customer stories](https://github.com/customer-stories)
+- [Events & webinars](https://github.com/resources/events)
+- [Ebooks & reports](https://github.com/resources/whitepapers)
+- [Business insights](https://github.com/solutions/executive-insights)
+- [GitHub Skills](https://skills.github.com)
+[Customer stories](https://github.com/customer-stories)
+[Events & webinars](https://github.com/resources/events)
+[Ebooks & reports](https://github.com/resources/whitepapers)
+[Business insights](https://github.com/solutions/executive-insights)
+[GitHub Skills](https://skills.github.com)
+- [Documentation](https://docs.github.com)
+- [Customer support](https://support.github.com)
+- [Community forum](https://github.com/orgs/community/discussions)
+- [Trust center](https://github.com/trust-center)
+- [Partners](https://github.com/partners)
+[Documentation](https://docs.github.com)
+[Customer support](https://support.github.com)
+[Community forum](https://github.com/orgs/community/discussions)
+[Trust center](https://github.com/trust-center)
+[Partners](https://github.com/partners)
+- COMMUNITY[GitHub SponsorsFund open source developers](https://github.com/sponsors)
+- [GitHub SponsorsFund open source developers](https://github.com/sponsors)
+
+## Navigation Menu
+
+- PROGRAMSSecurity LabMaintainer CommunityAccelerator[Archive Program](https://archiveprogram.github.com)
+- [Security Lab](https://securitylab.github.com)
+- [Maintainer Community](https://maintainers.github.com)
+- [Accelerator](https://github.com/accelerator)
+- [Archive Program](https://archiveprogram.github.com)
+- REPOSITORIESTopicsTrending[Collections](https://github.com/collections)
+- [Topics](https://github.com/topics)
+- [Trending](https://github.com/trending)
+- [Collections](https://github.com/collections)
+- [GitHub SponsorsFund open source developers](https://github.com/sponsors)
+[GitHub SponsorsFund open source developers](https://github.com/sponsors)
+- [Security Lab](https://securitylab.github.com)
+- [Maintainer Community](https://maintainers.github.com)
+- [Accelerator](https://github.com/accelerator)
+- [Archive Program](https://archiveprogram.github.com)
+[Security Lab](https://securitylab.github.com)
+[Maintainer Community](https://maintainers.github.com)
+[Accelerator](https://github.com/accelerator)
+[Archive Program](https://archiveprogram.github.com)
+- [Topics](https://github.com/topics)
+- [Trending](https://github.com/trending)
+- [Collections](https://github.com/collections)
+[Topics](https://github.com/topics)
+[Trending](https://github.com/trending)
+[Collections](https://github.com/collections)
+- ENTERPRISE SOLUTIONS[Enterprise platformAI-powered developer platform](https://github.com/enterprise)
+- [Enterprise platformAI-powered developer platform](https://github.com/enterprise)
+- AVAILABLE ADD-ONSGitHub Advanced SecurityEnterprise-grade security featuresCopilot for BusinessEnterprise-grade AI features[Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+- [GitHub Advanced SecurityEnterprise-grade security features](https://github.com/security/advanced-security)
+- [Copilot for BusinessEnterprise-grade AI features](https://github.com/features/copilot/copilot-business)
+- [Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+- [Enterprise platformAI-powered developer platform](https://github.com/enterprise)
+[Enterprise platformAI-powered developer platform](https://github.com/enterprise)
+- [GitHub Advanced SecurityEnterprise-grade security features](https://github.com/security/advanced-security)
+- [Copilot for BusinessEnterprise-grade AI features](https://github.com/features/copilot/copilot-business)
+- [Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+[GitHub Advanced SecurityEnterprise-grade security features](https://github.com/security/advanced-security)
+[Copilot for BusinessEnterprise-grade AI features](https://github.com/features/copilot/copilot-business)
+[Premium SupportEnterprise-grade 24/7 support](https://github.com/premium-support)
+[Pricing](https://github.com/pricing)
+
+# Search code, repositories, users, issues, pull requests...
+[Search syntax tips](https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax)
+
+# Provide feedback
+We read every piece of feedback, and take your input very seriously.
+
+## Use saved searches to filter your results more quickly
+
+To see all available qualifiers, see our [documentation](https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax).
+[Sign in](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fteamgram%2Fteamgram-server)
+[Sign up](https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=teamgram%2Fteamgram-server)
+[Reload](https://github.com/teamgram/teamgram-server)
+[Reload](https://github.com/teamgram/teamgram-server)
+[Reload](https://github.com/teamgram/teamgram-server)
+[teamgram](https://github.com/teamgram)
+[teamgram-server](https://github.com/teamgram/teamgram-server)
+- 
+            [Notifications](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)    You must be signed in to change notification settings
+
+
+- 
+          [Fork
+    413](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+
+- 
+
+        [Star
+          2.1k](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+
+[Notifications](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+[Fork
+    413](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+[Star
+          2.1k](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+Unofficial open source mtproto server written in golang with compatible telegram client.
+[teamgram.net](https://teamgram.net)
+
+### License
+[Apache-2.0 license](https://github.com/teamgram/teamgram-server/blob/master/LICENSE)
+[2.1k
+          stars](https://github.com/teamgram/teamgram-server/stargazers)
+[413
+          forks](https://github.com/teamgram/teamgram-server/forks)
+[Branches](https://github.com/teamgram/teamgram-server/branches)
+[Tags](https://github.com/teamgram/teamgram-server/tags)
+[Activity](https://github.com/teamgram/teamgram-server/activity)
+[Star](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+[Notifications](https://github.com/login?return_to=%2Fteamgram%2Fteamgram-server)
+- 
+  [Code](https://github.com/teamgram/teamgram-server)
+- 
+  [Issues
+          12](https://github.com/teamgram/teamgram-server/issues)
+- 
+  [Pull requests
+          0](https://github.com/teamgram/teamgram-server/pulls)
+- 
+  [Actions](https://github.com/teamgram/teamgram-server/actions)
+- 
+  [Projects
+          0](https://github.com/teamgram/teamgram-server/projects)
+- 
+
+
+
+
+
+        Security
+
+
+
+
+
+
+
+
+              Uh oh!
+
+              There was an error while loading. [Please reload this page](https://github.com/teamgram/teamgram-server).
+
+
+
+
+
+
+
+
+- 
+  [Insights](https://github.com/teamgram/teamgram-server/pulse)
+[Code](https://github.com/teamgram/teamgram-server)
+[Issues
+          12](https://github.com/teamgram/teamgram-server/issues)
+[Pull requests
+          0](https://github.com/teamgram/teamgram-server/pulls)
+[Actions](https://github.com/teamgram/teamgram-server/actions)
+[Projects
+          0](https://github.com/teamgram/teamgram-server/projects)
+[Security](https://github.com/teamgram/teamgram-server/security)
+[Uh oh!](https://github.com/teamgram/teamgram-server/security)
+
+### Uh oh!
+There was an error while loading. [Please reload this page](https://github.com/teamgram/teamgram-server).
+[Insights](https://github.com/teamgram/teamgram-server/pulse)
+- 
+
+
+    [Code](https://github.com/teamgram/teamgram-server)
+
+
+- 
+
+
+    [Issues](https://github.com/teamgram/teamgram-server/issues)
+
+
+- 
+
+
+    [Pull requests](https://github.com/teamgram/teamgram-server/pulls)
+
+
+- 
+
+
+    [Actions](https://github.com/teamgram/teamgram-server/actions)
+
+
+- 
+
+
+    [Projects](https://github.com/teamgram/teamgram-server/projects)
+
+
+- 
+
+
+    [Security](https://github.com/teamgram/teamgram-server/security)
+
+
+- 
+
+
+    [Insights](https://github.com/teamgram/teamgram-server/pulse)
+
+
+[Code](https://github.com/teamgram/teamgram-server)
+[Issues](https://github.com/teamgram/teamgram-server/issues)
+[Pull requests](https://github.com/teamgram/teamgram-server/pulls)
+[Actions](https://github.com/teamgram/teamgram-server/actions)
+[Projects](https://github.com/teamgram/teamgram-server/projects)
+[Security](https://github.com/teamgram/teamgram-server/security)
+[Insights](https://github.com/teamgram/teamgram-server/pulse)
+
+# teamgram/teamgram-server
+
+[Branches](https://github.com/teamgram/teamgram-server/branches)
+[Tags](https://github.com/teamgram/teamgram-server/tags)
+
+## History
+[1,217 Commits](https://github.com/teamgram/teamgram-server/commits/master/)
+[app](https://github.com/teamgram/teamgram-server/tree/master/app)
+[app](https://github.com/teamgram/teamgram-server/tree/master/app)
+[clients](https://github.com/teamgram/teamgram-server/tree/master/clients)
+[clients](https://github.com/teamgram/teamgram-server/tree/master/clients)
+[data](https://github.com/teamgram/teamgram-server/tree/master/data)
+[data](https://github.com/teamgram/teamgram-server/tree/master/data)
+[docs](https://github.com/teamgram/teamgram-server/tree/master/docs)
+[docs](https://github.com/teamgram/teamgram-server/tree/master/docs)
+[pkg](https://github.com/teamgram/teamgram-server/tree/master/pkg)
+[pkg](https://github.com/teamgram/teamgram-server/tree/master/pkg)
+[teamgramd](https://github.com/teamgram/teamgram-server/tree/master/teamgramd)
+[teamgramd](https://github.com/teamgram/teamgram-server/tree/master/teamgramd)
+[.gitignore](https://github.com/teamgram/teamgram-server/blob/master/.gitignore)
+[.gitignore](https://github.com/teamgram/teamgram-server/blob/master/.gitignore)
+[Dockerfile](https://github.com/teamgram/teamgram-server/blob/master/Dockerfile)
+[Dockerfile](https://github.com/teamgram/teamgram-server/blob/master/Dockerfile)
+[LICENSE](https://github.com/teamgram/teamgram-server/blob/master/LICENSE)
+[LICENSE](https://github.com/teamgram/teamgram-server/blob/master/LICENSE)
+[Makefile](https://github.com/teamgram/teamgram-server/blob/master/Makefile)
+[Makefile](https://github.com/teamgram/teamgram-server/blob/master/Makefile)
+[Makefile.teamgram](https://github.com/teamgram/teamgram-server/blob/master/Makefile.teamgram)
+[Makefile.teamgram](https://github.com/teamgram/teamgram-server/blob/master/Makefile.teamgram)
+[README.md](https://github.com/teamgram/teamgram-server/blob/master/README.md)
+[README.md](https://github.com/teamgram/teamgram-server/blob/master/README.md)
+[build.sh](https://github.com/teamgram/teamgram-server/blob/master/build.sh)
+[build.sh](https://github.com/teamgram/teamgram-server/blob/master/build.sh)
+[dalgenall.sh](https://github.com/teamgram/teamgram-server/blob/master/dalgenall.sh)
+[dalgenall.sh](https://github.com/teamgram/teamgram-server/blob/master/dalgenall.sh)
+[docker-compose-env.yaml](https://github.com/teamgram/teamgram-server/blob/master/docker-compose-env.yaml)
+[docker-compose-env.yaml](https://github.com/teamgram/teamgram-server/blob/master/docker-compose-env.yaml)
+[docker-compose.yaml](https://github.com/teamgram/teamgram-server/blob/master/docker-compose.yaml)
+[docker-compose.yaml](https://github.com/teamgram/teamgram-server/blob/master/docker-compose.yaml)
+[go.mod](https://github.com/teamgram/teamgram-server/blob/master/go.mod)
+[go.mod](https://github.com/teamgram/teamgram-server/blob/master/go.mod)
+[go.sum](https://github.com/teamgram/teamgram-server/blob/master/go.sum)
+[go.sum](https://github.com/teamgram/teamgram-server/blob/master/go.sum)
+[minio_init.sh](https://github.com/teamgram/teamgram-server/blob/master/minio_init.sh)
+[minio_init.sh](https://github.com/teamgram/teamgram-server/blob/master/minio_init.sh)
+
+## Repository files navigation
+- README
+- Apache-2.0 license
+README
+Apache-2.0 license
+
+# Teamgram - Unofficial open source [mtproto](https://core.telegram.org/mtproto) server written in golang
+
+[mtproto](https://core.telegram.org/mtproto)
+open source mtproto server implemented in golang with compatible telegram client.
+
+## Introduce
+Open source [mtproto](https://core.telegram.org/mtproto) server implementation written in golang, support private deployment.
+
+## Features
+- MTProto 2.0
+
+Abridged
+Intermediate
+Padded intermediate
+Full
+
+
+- Abridged
+- Intermediate
+- Padded intermediate
+- Full
+- API Layer: 201
+- private chat
+- basic group
+- contacts
+- web
+- Abridged
+- Intermediate
+- Padded intermediate
+- Full
+
+## Installing Teamgram
+Teamgram relies on high-performance components:
+
+```
+Teamgram
+```
+
+- mysql5.7
+- [redis](https://redis.io/)
+- [etcd](https://etcd.io/)
+- [kafka](https://kafka.apache.org/quickstart)
+- [minio](https://docs.min.io/docs/minio-quickstart-guide.html)
+- [ffmpeg](https://www.johnvansickle.com/ffmpeg/)
+[redis](https://redis.io/)
+[etcd](https://etcd.io/)
+[kafka](https://kafka.apache.org/quickstart)
+[minio](https://docs.min.io/docs/minio-quickstart-guide.html)
+[ffmpeg](https://www.johnvansickle.com/ffmpeg/)
+Privatization deployment Before Teamgram, please make sure that the above five components have been installed. If your server does not have the above components, you must first install Missing components.
+
+```
+Teamgram
+```
+
+- [Centos9 Stream Build and Install](https://github.com/teamgram/teamgram-server/blob/master/docs/install-centos-9.md) [@A Feel]
+- [CentOS7 teamgram-server环境搭建](https://github.com/teamgram/teamgram-server/blob/master/docs/install-centos-7.md) [@saeipi]
+- [Fedora 40 Build and Install](https://github.com/teamgram/teamgram-server/blob/master/docs/install-fedora.md) [@lingyicute]
+[Centos9 Stream Build and Install](https://github.com/teamgram/teamgram-server/blob/master/docs/install-centos-9.md)
+[CentOS7 teamgram-server环境搭建](https://github.com/teamgram/teamgram-server/blob/master/docs/install-centos-7.md)
+[Fedora 40 Build and Install](https://github.com/teamgram/teamgram-server/blob/master/docs/install-fedora.md)
+If you have the above components, it is recommended to use them directly. If not, it is recommended to use docker-compose-env.yaml.
+
+```
+docker-compose-env.yaml
+```
+
+### Source code deployment
+
+#### Install [Go environment](https://go.dev/doc/install). Make sure Go version is at least 1.21.
+[Go environment](https://go.dev/doc/install)
+
+#### Get source code
+
+```
+git clone https://github.com/teamgram/teamgram-server.git cd teamgram-server
+```
+
+
+```
+git clone https://github.com/teamgram/teamgram-server.git cd teamgram-server
+```
+
+
+#### Init data
+- 
+init database
+ 1. create database teamgram
+ 2. init teamgram database
+ 	mysql -uroot teamgram < teamgramd/sql/1_teamgram.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220321.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220326.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220328.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220401.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220412.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220419.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220423.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220504.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220721.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220826.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20220919.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20221008.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20221011.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20221016.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20221023.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20221101.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20221127.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20230707.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240107.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240108.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240111.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240112.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240113.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240114.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240420.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240620.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20240828.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20241010.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20241016.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20241026.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20241105.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20241123.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20250109.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20250410.sql
+ 	mysql -uroot teamgram < teamgramd/sql/migrate-20250529.sql
+ 	mysql -uroot teamgram < teamgramd/sql/z_init.sql
+
+
+- 
+init minio buckets
+
+bucket names
+
+documents
+encryptedfiles
+photos
+videos
+
+
+Access http://ip:xxxxx and create
+
+
+- bucket names
+
+documents
+encryptedfiles
+photos
+videos
+
+
+- documents
+- encryptedfiles
+- photos
+- videos
+- Access http://ip:xxxxx and create
+init database
+
+### Source code deployment
+
+```
+1. create database teamgram 2. init teamgram database mysql -uroot teamgram < teamgramd/sql/1_teamgram.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220321.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220326.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220328.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220401.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220412.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220419.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220423.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220504.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220721.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220826.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220919.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221008.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221011.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221016.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221023.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221101.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221127.sql mysql -uroot teamgram < teamgramd/sql/migrate-20230707.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240107.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240108.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240111.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240112.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240113.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240114.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240420.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240620.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240828.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241010.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241016.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241026.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241105.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241123.sql mysql -uroot teamgram < teamgramd/sql/migrate-20250109.sql mysql -uroot teamgram < teamgramd/sql/migrate-20250410.sql mysql -uroot teamgram < teamgramd/sql/migrate-20250529.sql mysql -uroot teamgram < teamgramd/sql/z_init.sql
+```
+
+
+```
+1. create database teamgram 2. init teamgram database mysql -uroot teamgram < teamgramd/sql/1_teamgram.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220321.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220326.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220328.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220401.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220412.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220419.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220423.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220504.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220721.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220826.sql mysql -uroot teamgram < teamgramd/sql/migrate-20220919.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221008.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221011.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221016.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221023.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221101.sql mysql -uroot teamgram < teamgramd/sql/migrate-20221127.sql mysql -uroot teamgram < teamgramd/sql/migrate-20230707.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240107.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240108.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240111.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240112.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240113.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240114.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240420.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240620.sql mysql -uroot teamgram < teamgramd/sql/migrate-20240828.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241010.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241016.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241026.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241105.sql mysql -uroot teamgram < teamgramd/sql/migrate-20241123.sql mysql -uroot teamgram < teamgramd/sql/migrate-20250109.sql mysql -uroot teamgram < teamgramd/sql/migrate-20250410.sql mysql -uroot teamgram < teamgramd/sql/migrate-20250529.sql mysql -uroot teamgram < teamgramd/sql/z_init.sql
+```
+
+init minio buckets
+- bucket names
+
+### Source code deployment
+documents
+encryptedfiles
+photos
+videos
+
+
+- documents
+- encryptedfiles
+- photos
+- videos
+- Access http://ip:xxxxx and create
+- documents
+- encryptedfiles
+- photos
+- videos
+
+```
+documents
+```
+
+
+```
+encryptedfiles
+```
+
+
+```
+photos
+```
+
+
+```
+videos
+```
+
+
+```
+http://ip:xxxxx
+```
+
+
+#### Build
+
+```
+make
+```
+
+
+```
+make
+```
+
+
+#### Run
+
+```
+cd teamgramd/bin ./runall2.sh
+```
+
+
+```
+cd teamgramd/bin ./runall2.sh
+```
+
+### Docker deployment
+#### Install [Docker](https://docs.docker.com/get-docker/)
+[Docker](https://docs.docker.com/get-docker/)
+
+#### Install [Docker Compose](https://docs.docker.com/compose/install/)
+[Docker Compose](https://docs.docker.com/compose/install/)
+
+#### Get source code
+
+```
+git clone https://github.com/teamgram/teamgram-server.git cd teamgram-server
+```
+
+
+```
+git clone https://github.com/teamgram/teamgram-server.git cd teamgram-server
+```
+
+
+#### Run
+
+```
+# run dependency docker-compose -f ./docker-compose-env.yaml up -d # run docker-compose docker-compose up -d
+```
+
+
+```
+# run dependency docker-compose -f ./docker-compose-env.yaml up -d # run docker-compose docker-compose up -d
+```
+
+## Compatible clients
+Important: default signIn verify code is 12345
+[Android client for Teamgram](https://github.com/teamgram/teamgram-server/blob/master/clients/teamgram-android.md)
+[iOS client for Teamgram](https://github.com/teamgram/teamgram-server/blob/master/clients/teamgram-ios.md)
+[tdesktop for Teamgram](https://github.com/teamgram/teamgram-server/blob/master/clients/teamgram-tdesktop.md)
+
+## Feedback
+Please report bugs, concerns, suggestions by issues, or join telegram group [Teamgram](https://t.me/+TjD5LZJ5XLRlCYLF) to discuss problems around source code.
+
+## Notes
+If need enterprise edition:
+- sticker/theme/wallpaper/reactions/2fa/sms/push(apns/web/fcm)/secretchat/scheduled/...
+- channel/megagroup
+- audiocall/videocall/groupcall
+- bots
+please PM the [author](https://t.me/benqi)
+
+## Give a Star! ⭐
+If you like or are using this project to learn or start your solution, please give it a star. Thanks!
+
+## About
+Unofficial open source mtproto server written in golang with compatible telegram client.
+[teamgram.net](https://teamgram.net)
+
+### Topics
+[go](https://github.com/topics/go)
+[chat](https://github.com/topics/chat)
+[golang](https://github.com/topics/golang)
+[telegram](https://github.com/topics/telegram)
+[messaging](https://github.com/topics/messaging)
+[messenger](https://github.com/topics/messenger)
+[mtproto](https://github.com/topics/mtproto)
+[im](https://github.com/topics/im)
+[im-server](https://github.com/topics/im-server)
+[telegram-server](https://github.com/topics/telegram-server)
+[mtproto-server](https://github.com/topics/mtproto-server)
+
+### Resources
+Readme
+
+### License
+Apache-2.0 license
+
+### Uh oh!
+There was an error while loading. [Please reload this page](https://github.com/teamgram/teamgram-server).
+[Activity](https://github.com/teamgram/teamgram-server/activity)
+[Custom properties](https://github.com/teamgram/teamgram-server/custom-properties)
+
+### Stars
+[2.1k
+      stars](https://github.com/teamgram/teamgram-server/stargazers)
+
+### Watchers
+[53
+      watching](https://github.com/teamgram/teamgram-server/watchers)
+
+### Forks
+[413
+      forks](https://github.com/teamgram/teamgram-server/forks)
+[Report repository](https://github.com/contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fteamgram%2Fteamgram-server&report=teamgram+%28user%29)
+
+## [Releases 10](https://github.com/teamgram/teamgram-server/releases)
+[Releases
+      10](https://github.com/teamgram/teamgram-server/releases)
+[v0.90.4
+
+          Latest
+
+      Mar 14, 2023](https://github.com/teamgram/teamgram-server/releases/tag/v0.90.4)
+[+ 9 releases](https://github.com/teamgram/teamgram-server/releases)
+
+## [Packages 0](https://github.com/orgs/teamgram/packages?repo_name=teamgram-server)
+[Packages
+      0](https://github.com/orgs/teamgram/packages?repo_name=teamgram-server)
+
+### Uh oh!
+
+There was an error while loading. [Please reload this page](https://github.com/teamgram/teamgram-server).
+
+## [Contributors 21](https://github.com/teamgram/teamgram-server/graphs/contributors)
+[Contributors
+      21](https://github.com/teamgram/teamgram-server/graphs/contributors)
+[+ 7 contributors](https://github.com/teamgram/teamgram-server/graphs/contributors)
+
+## Languages
+- 
+        [Go
+          99.3%](https://github.com/teamgram/teamgram-server/search?l=go)
+
+- 
+
+
+
+
+        Other
+        0.7%
+
+
+[Go
+          99.3%](https://github.com/teamgram/teamgram-server/search?l=go)
+
+### Footer navigation
+
+- 
+            [Terms](https://docs.github.com/site-policy/github-terms/github-terms-of-service)
+
+- 
+            [Privacy](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement)
+
+- 
+            [Security](https://github.com/security)
+
+- 
+            [Status](https://www.githubstatus.com/)
+
+- 
+            [Community](https://github.community/)
+
+- 
+            [Docs](https://docs.github.com/)
+
+- 
+            [Contact](https://support.github.com?tags=dotcom-footer)
+
+- 
+
+
+       Manage cookies
+
+
+
+- 
+
+
+      Do not share my personal information
+
+
+
+[Terms](https://docs.github.com/site-policy/github-terms/github-terms-of-service)
+[Privacy](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement)
+[Security](https://github.com/security)
+[Status](https://www.githubstatus.com/)
+[Community](https://github.community/)
+[Docs](https://docs.github.com/)
+[Contact](https://support.github.com?tags=dotcom-footer)

@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.HighPerformance" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Logging" />
+        <PackageReference Include="Polly" />
+        <PackageReference Include="RabbitMQ.Client" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+
+      <!--<PackageReference Include="MemoryPack" />-->
+
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MyTelegram.Abstractions\MyTelegram.Abstractions.csproj" />
+        <ProjectReference Include="..\MyTelegram.EventBus\MyTelegram.EventBus.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="Fody">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>

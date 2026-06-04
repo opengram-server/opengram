@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-app: #050505;
+  --bg-side: #0a0a0a;
+  --bg-panel: #0f0f0f;
+  --fg: #ffffff;
+  --fg-muted: #555555;
+  --accent: #00f2ff;
+  --accent-glow: rgba(0, 242, 255, 0.2);
+  --border: rgba(255, 255, 255, 0.05);
+  --glass: rgba(255, 255, 255, 0.02);
+  --success: #00ff88;
+}
+
+[data-theme="light"] {
+  --bg-app: #f3f4f6;
+  --bg-side: #ffffff;
+  --bg-panel: #ffffff;
+  --fg: #111827;
+  --fg-muted: #4b5563;
+  --accent: #0891b2;
+  --accent-glow: rgba(8, 145, 178, 0.1);
+  --border: rgba(0, 0, 0, 0.1);
+  --glass: rgba(0, 0, 0, 0.05);
+  --success: #059669;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-app text-fg font-sans;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    height: 100vh;
+    overflow: hidden;
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-app);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-panel);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    ::selection {
+      background: var(--accent);
+      color: #000;
+    }
+  }
+
+  /* Re-enable default cursor on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    * {
+      cursor: auto !important;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading text-fg;
+    line-height: 1.3;
+  }
+}
+
+/* Custom Cursor */
+#custom-cursor {
+  width: 32px;
+  height: 32px;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  background: url('/Pointer.cur') center/contain no-repeat;
+  transform: translate(-50%, -50%);
+  /* Center cursor */
+}
+
+[data-theme="light"] #custom-cursor {
+  background: url('/Pointer1.cur') center/contain no-repeat;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  #custom-cursor {
+    display: none !important;
+  }
+}
+
+@layer components {
+
+  /* Modern Cards with VOIDPAY style */
+  .card {
+    @apply bg-bg-panel border border-border rounded-2xl p-6 transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply border-accent shadow-[0_0_15px_var(--accent-glow)];
+  }
+
+  /* Buttons */
+  .btn {
+    @apply px-6 py-3 rounded-lg font-bold font-heading transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center;
+    font-size: 0.9375rem;
+  }
+
+  .btn-primary {
+    @apply bg-fg text-bg-app hover:bg-accent hover:text-black hover:shadow-[0_0_15px_var(--accent-glow)];
+  }
+
+  .btn-secondary {
+    @apply bg-glass text-fg border border-border hover:bg-fg hover:text-bg-app;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-3 bg-bg-panel border border-border rounded-lg text-fg placeholder-fg-muted outline-none transition-all;
+  }
+
+  .input:focus {
+    @apply border-accent shadow-[0_0_15px_var(--accent-glow)];
+  }
+
+  /* Sidebar */
+  .void-sidebar {
+    @apply w-[280px] bg-bg-side border-r border-border flex flex-col flex-shrink-0;
+  }
+
+  .sidebar-link {
+    @apply block px-6 py-3 text-fg-muted font-medium text-sm transition-all border-l-2 border-transparent;
+  }
+
+  .sidebar-link.active {
+    @apply bg-[rgba(0, 242, 255, 0.05)] text-fg border-accent;
+  }
+}

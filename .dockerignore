@@ -1,0 +1,55 @@
+# Docker ignore file - exclude unnecessary files from build context
+
+# Node.js
+**/node_modules/
+**/npm-debug.log
+**/.npm
+**/yarn-error.log
+**/yarn.lock
+**/package-lock.json
+
+# .NET build artifacts
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Docker
+**/docker-compose*.yml
+**/Dockerfile*
+**/.dockerignore
+
+# Documentation
+**/*.md
+**/docs/
+
+# IDE
+**/.idea/
+**/.vscode/
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+
+# Logs
+**/logs/
+**/*.log
+
+# Temporary files
+**/tmp/
+**/temp/
+**/.tmp/
+
+# Specific exclusions
+stargift-admin/
+docker/compose/data/
+scripts/
+
+# Keep source code and build files for Docker
+!source/
+!build/

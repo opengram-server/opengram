@@ -1,0 +1,588 @@
+import express from 'express';
+import multer from 'multer';
+import { promises as fs } from 'fs';
+import path from 'path';
+import Joi from 'joi';
+import zlib from 'zlib';
+import { promisify } from 'util';
+import { Long } from 'mongodb';
+import minioHelper from '../utils/minioHelper.js';
+
+const gunzip = promisify(zlib.gunzip);
+
+const router = express.Router();
+
+// File upload configuration
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadDir = 'uploads/stickers';
+    await fs.mkdir(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `sticker-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/json', 'application/octet-stream', 'application/x-tgsticker'];
+    const allowedExts = ['.json', '.tgs'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .json and .tgs files are allowed'));
+    }
+  }
+});
+
+// Helper to handle BigInt and BSON Long serialization
+const toJSON = (data) => {
+  return JSON.parse(JSON.stringify(data, (key, value) => {
+    // Handle native BigInt
+    if (typeof value === 'bigint') {
+      return value.toString();
+    }
+    // Handle BSON Long objects (which have low, high, unsigned properties)
+    if (value && typeof value === 'object' && (value._bsontype === 'Long' || (value.hasOwnProperty('low') && value.hasOwnProperty('high')))) {
+      return value.toString();
+    }
+    return value;
+  }));
+};
+
+// Validation schemas
+const giftSchema = Joi.object({
+  // ✅ FIX: Allow string input for large 64-bit IDs
+  giftId: Joi.alt([
+    Joi.number().integer().positive(),
+    Joi.string().pattern(/^\d+$/)
+  ]).required(),
+  limited: Joi.boolean().default(false),
+  soldOut: Joi.boolean().default(false),
+  birthday: Joi.boolean().default(false),
+  stars: Joi.number().integer().positive().required(),
+  convertStars: Joi.number().integer().positive().required(),
+  upgradeStars: Joi.number().integer().positive().optional(),
+  availabilityTotal: Joi.number().integer().positive().optional().allow(null),
+  availabilityRemains: Joi.number().integer().min(0).optional().allow(null),
+  firstSaleDate: Joi.number().integer().optional().allow(null),
+  lastSaleDate: Joi.number().integer().optional().allow(null),
+  title: Joi.string().max(100).optional().allow(null, ''),
+  resellMinStars: Joi.number().integer().positive().optional().allow(null)
+});
+
+// GET all gifts
+router.get('/', async (req, res) => {
+  try {
+    const { soldOut, limited, sort = 'stars' } = req.query;
+
+    const filter = {};
+    if (soldOut !== undefined) filter.SoldOut = soldOut === 'true';
+    if (limited !== undefined) filter.Limited = limited === 'true';
+
+    const sortOptions = {};
+    if (sort === 'stars') sortOptions.Stars = 1;
+    else if (sort === 'date') sortOptions._id = -1;
+    else if (sort === 'availability') sortOptions.AvailabilityRemains = 1;
+
+    const gifts = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .find(filter)
+      .sort(sortOptions)
+      .toArray();
+
+    res.json(toJSON(gifts));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET gift by ID
+router.get('/:giftId', async (req, res) => {
+  try {
+    // ✅ FIX: Use BigInt for large IDs
+    const giftId = BigInt(req.params.giftId);
+    const gift = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .findOne({ GiftId: giftId });
+
+    if (!gift) {
+      return res.status(404).json({ error: 'Gift not found' });
+    }
+
+    res.json(toJSON(gift));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST create new gift
+router.post('/', upload.single('sticker'), async (req, res) => {
+  try {
+    // Parse JSON data from form
+    const giftData = typeof req.body.data === 'string'
+      ? JSON.parse(req.body.data)
+      : req.body;
+
+    // Validate
+    const { error, value } = giftSchema.validate(giftData);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // ✅ FIX: Convert to BigInt for DB check
+    const safeGiftId = BigInt(value.giftId);
+
+    // Check if gift ID already exists
+    const existing = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .findOne({ GiftId: safeGiftId });
+
+    if (existing) {
+      return res.status(409).json({ error: 'Gift with this ID already exists' });
+    }
+
+    // ✅ Upload sticker file to MinIO and create DocumentReadModel
+    let stickerDocumentId = null;
+    if (req.file) {
+      try {
+        console.log(`📤 Uploading sticker: ${req.file.originalname}, Size: ${req.file.size} bytes`);
+
+        // Validate TGS file
+        const fileBuffer = await fs.readFile(req.file.path);
+
+        // Try to decompress, if fails assume it's already JSON
+        let json;
+        try {
+          const decompressed = await gunzip(fileBuffer);
+          json = JSON.parse(decompressed.toString('utf8'));
+        } catch (error) {
+          // If gunzip fails, try parsing as plain JSON
+          try {
+            json = JSON.parse(fileBuffer.toString('utf8'));
+            console.log('⚠️  File is not gzipped, treating as plain JSON');
+          } catch (jsonError) {
+            throw new Error('Invalid TGS file: not gzipped JSON or plain JSON');
+          }
+        }
+
+        // Generate document ID for sticker
+        const documentId = Date.now() * 10000 + Math.floor(Math.random() * 10000);
+        const accessHash = Date.now() * 100000 + Math.floor(Math.random() * 100000);
+
+        // Upload to MinIO (same format as emoji - root path, no extension)
+        await minioHelper.uploadFile(req.file.path, documentId, 'application/x-tgsticker');
+        console.log(`✅ Uploaded sticker to MinIO: ${documentId}`);
+
+        // Generate FileReference (8 bytes)
+        const fileRefBuffer = Buffer.allocUnsafe(8);
+        fileRefBuffer.writeUInt32BE(Math.floor(Date.now() / 1000), 0);
+        fileRefBuffer.writeUInt32BE(Math.floor(Math.random() * 0xFFFFFFFF), 4);
+
+        // Create DocumentReadModel (same as emoji)
+        const documentReadModel = {
+          _id: `document-${documentId}`,  // EventFlow ID format
+          Id: `document-${documentId}`,   // EventFlow requires this
+          DocumentId: documentId,
+          Version: 1,
+          AccessHash: accessHash,
+          FileReference: fileRefBuffer,
+          DcId: 2,
+          Date: Math.floor(Date.now() / 1000),
+          MimeType: 'application/x-tgsticker',
+          Size: fileBuffer.length,
+          Name: `${documentId}`,
+          Md5CheckSum: null,
+          CreatorId: null,
+          Thumbs: [
+            {
+              Type: 'i',
+              // Minimal valid stripped thumbnail (blue-ish placeholder)
+              Bytes: Buffer.from([0x01, 0x08, 0x08, 0x2a, 0x8c, 0x47, 0x92, 0x48, 0x20])
+            }
+          ],
+          ThumbId: null,
+          VideoThumbs: null,
+          VideoThumbId: null,
+          Attributes: null,
+          Attributes2: [
+            {
+              _t: 'TDocumentAttributeImageSize',
+              W: 512,
+              H: 512
+            },
+            {
+              _t: 'TDocumentAttributeAnimated'  // ✅ CRITICAL for TGS stickers!
+            },
+            {
+              _t: 'TDocumentAttributeSticker',
+              Alt: '🎁',
+              Stickerset: {
+                _t: 'TInputStickerSetShortName',
+                ShortName: 'premium_gifts'
+              },
+              Mask: false
+            },
+            {
+              _t: 'TDocumentAttributeFilename',
+              FileName: 'sticker.tgs'
+            }
+          ]
+        };
+
+        // NOTE: Use EventFlow naming convention for ReadModel collections
+        await req.db.collection('ReadModel-DocumentReadModel').insertOne(documentReadModel);
+        console.log(`✅ Created DocumentReadModel for sticker: ${documentId}`);
+
+        stickerDocumentId = documentId;
+
+        // Cleanup temp file
+        // ✅ FIX: Use BigInt
+        const giftId = BigInt(req.params.giftId);
+
+        // Parse JSON data
+        const giftData = typeof req.body.data === 'string'
+          ? JSON.parse(req.body.data)
+          : req.body;
+
+        const updateData = { ...giftData };
+        delete updateData.giftId; // Don't allow changing ID
+
+        // Read new sticker if uploaded - store as Buffer not base64
+        if (req.file) {
+          const fileBuffer = await fs.readFile(req.file.path);
+          updateData.Sticker = fileBuffer; // Store as Binary (Buffer)
+        }
+
+        const result = await req.db
+          .collection('AvailableStarGiftReadModel')
+          .findOneAndUpdate(
+            { GiftId: giftId },
+            {
+              $set: {
+                ...updateData,
+                UpdatedAt: new Date()
+              }
+            },
+            { returnDocument: 'after' }
+          );
+
+        if (!result) {
+          return res.status(404).json({ error: 'Gift not found' });
+        }
+
+        res.json(toJSON(result));
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+// DELETE gift
+router.delete('/:giftId', async (req, res) => {
+  try {
+    // ✅ FIX: Use BigInt
+    const giftId = BigInt(req.params.giftId);
+
+    const result = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .deleteOne({ GiftId: giftId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Gift not found' });
+    }
+
+    res.json({ message: 'Gift deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PATCH mark as sold out
+router.patch('/:giftId/soldout', async (req, res) => {
+  try {
+    // ✅ FIX: Use BigInt
+    const giftId = BigInt(req.params.giftId);
+    const { soldOut } = req.body;
+
+    const result = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .findOneAndUpdate(
+        { GiftId: giftId },
+        {
+          $set: {
+            SoldOut: soldOut,
+            LastSaleDate: soldOut ? Math.floor(Date.now() / 1000) : null,
+            UpdatedAt: new Date()
+          }
+        },
+        { returnDocument: 'after' }
+      );
+
+    if (!result) {
+      return res.status(404).json({ error: 'Gift not found' });
+    }
+
+    res.json(toJSON(result));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE all gifts (clear collection)
+router.delete('/', async (req, res) => {
+  try {
+    const result = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .deleteMany({});
+
+    res.json({
+      message: 'All gifts deleted successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PATCH decrease availability
+router.patch('/:giftId/purchase', async (req, res) => {
+  try {
+    // ✅ FIX: Use BigInt
+    const giftId = BigInt(req.params.giftId);
+
+    const gift = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .findOne({ GiftId: giftId });
+
+    if (!gift) {
+      return res.status(404).json({ error: 'Gift not found' });
+    }
+
+    if (!gift.Limited) {
+      return res.status(400).json({ error: 'Gift is not limited' });
+    }
+
+    if (gift.AvailabilityRemains <= 0) {
+      return res.status(400).json({ error: 'Gift sold out' });
+    }
+
+    const result = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .findOneAndUpdate(
+        { GiftId: giftId },
+        {
+          $inc: { AvailabilityRemains: -1 },
+          $set: {
+            UpdatedAt: new Date(),
+            SoldOut: gift.AvailabilityRemains - 1 <= 0
+          }
+        },
+        { returnDocument: 'after' }
+      );
+
+    res.json(toJSON(result));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST send gift to user (admin function)
+router.post('/:giftId/send-to-user', async (req, res) => {
+  try {
+    // ✅ FIX: Use BigInt
+    const giftId = BigInt(req.params.giftId);
+    const { userId, fromUserId, message, nameHidden } = req.body;
+
+    // Validate required fields
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Get gift from catalog
+    const gift = await req.db
+      .collection('AvailableStarGiftReadModel')
+      .findOne({ GiftId: giftId });
+
+    if (!gift) {
+      return res.status(404).json({ error: 'Gift not found' });
+    }
+
+    // Generate unique messageId (small int32 compatible)
+    // Use random number within int32 range: 1 to 2147483647
+    const messageId = Math.floor(Math.random() * 2000000000) + 1000000;
+    const now = Math.floor(Date.now() / 1000);
+
+    // Create received gift record
+    const receivedGift = {
+      _id: `${userId}_${messageId}`,
+      Id: `${userId}_${messageId}`,
+      GiftId: giftId, // ✅ Store as BigInt
+      FromUserId: fromUserId || 0, // 0 = system/admin
+      ToUserId: parseInt(userId),
+      ToPeerId: null,
+      MessageId: messageId,
+      Stars: gift.Stars,
+      ConvertStars: gift.ConvertStars,
+      Message: message || null,
+      NameHidden: nameHidden || false,
+      Saved: true, // Auto-save admin gifts
+      Converted: false,
+      Upgraded: false,
+      Refunded: false,
+      CanUpgrade: gift.UpgradeStars ? true : false,
+      Pinned: false,
+      SavedId: null,
+      UpgradeStars: gift.UpgradeStars,
+      UpgradeMsgId: null,
+      Date: now,
+      ConvertDate: null,
+      UpgradeDate: null,
+      StickerDocumentId: gift.Sticker, // DocumentId for sticker loading
+      Title: gift.Title || '', // Gift title
+      Version: 1
+    };
+
+    // Insert into eventflow-stargiftreadmodel collection
+    await req.db
+      .collection('eventflow-stargiftreadmodel')
+      .insertOne(receivedGift);
+
+    // Create inbox message for the recipient with ALL required fields
+    const inboxMessage = {
+      _id: `message-${userId}_${messageId}`,
+      Id: `message-${userId}_${messageId}`,
+      OwnerPeerId: parseInt(userId),
+      ToPeerId: parseInt(userId),
+      ToPeerType: 1, // User
+      SenderUserId: fromUserId || 0,
+      SenderPeerId: fromUserId || 0,
+      SenderMessageId: 0,
+      MessageId: messageId,
+      Message: '',
+      Date: now,
+      Out: false, // Inbox message
+      Pinned: false,
+      Post: false,
+      Silent: false,
+      Pts: 0, // Will be set by server
+      Views: null,
+      Replies: 0,
+      EditDate: null,
+      EditHide: false,
+      PostAuthor: null,
+      GroupedId: null,
+      ReplyToMsgId: null,
+      TopMsgId: null,
+      FwdHeader: null,
+      Media: null,
+      Media2: null,
+      Entities: null,
+      Entities2: null,
+      ReplyMarkup: null,
+      ReplyMarkup2: null,
+      ReplyTo: null,
+      SendAs: null,
+      Reply: null,
+      MessageType: 1, // Text
+      SendMessageType: 1, // MessageService
+      MessageActionType: 19, // CustomAction
+      MessageActionData: JSON.stringify({
+        _t: 'TMessageActionStarGift',
+        NameHidden: nameHidden || false,
+        Saved: false,
+        Converted: false,
+        Upgraded: false,
+        Refunded: false,
+        CanUpgrade: gift.UpgradeStars ? true : false,
+        Gift: {
+          Id: giftId.toString(), // ✅ Serialize BigInt to string for JSON
+          Stars: gift.Stars,
+          Title: gift.Title
+        },
+        Message: message ? {
+          Text: message,
+          Entities: []
+        } : null,
+        ConvertStars: gift.ConvertStars,
+        UpgradeStars: gift.UpgradeStars
+      }),
+      LinkedChannelId: null,
+      SavedFromMsgId: null,
+      SavedFromPeerId: null,
+      SavedPeerId: null,
+      PollId: null,
+      PostChannelId: null,
+      PostMessageId: null,
+      IsQuickReplyMessage: false,
+      ShortcutId: null,
+      QuickReplyItem: null,
+      BatchId: null,
+      Effect: null,
+      FromScheduled: false,
+      ScheduleDate: null,
+      TtlPeriod: null,
+      Reactions: null,
+      RecentReactions2: null,
+      RecentReactions: null,
+      TopReactors: null,
+      CanSeeList: false,
+      ExpirationTime: null,
+      InvertMedia: false,
+      PublicPosts: false,
+      Hashtags: [],
+      MentionedUserIds: null,
+      TodoId: null,
+      Version: 1
+    };
+
+    // Insert inbox message into ReadModel-MessageReadModel
+    await req.db
+      .collection('ReadModel-MessageReadModel')
+      .insertOne(inboxMessage);
+
+    // Decrease availability if limited
+    if (gift.Limited && gift.AvailabilityRemains > 0) {
+      await req.db
+        .collection('AvailableStarGiftReadModel')
+        .updateOne(
+          { GiftId: giftId },
+          {
+            $inc: { AvailabilityRemains: -1 },
+            $set: {
+              UpdatedAt: new Date(),
+              SoldOut: gift.AvailabilityRemains - 1 <= 0
+            }
+          }
+        );
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Gift ${giftId} sent to user ${userId}`,
+      warning: 'Gift inserted into database. Restart Query Server to see it in user profile.',
+      receivedGift: {
+        userId: parseInt(userId),
+        giftId: giftId.toString(), // ✅ Serialize BigInt
+        messageId: messageId,
+        stars: gift.Stars,
+        title: gift.Title
+      },
+      instructions: {
+        step1: 'Gift has been added to database',
+        step2: 'To make it visible in user profile, restart Query Server:',
+        command: 'docker restart messenger-query-server-1'
+      }
+    });
+  } catch (error) {
+    console.error('Send gift error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;

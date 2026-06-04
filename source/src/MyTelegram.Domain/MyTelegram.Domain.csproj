@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Force Docker rebuild v2: Added InstallStickerSetCommand + TTL + CustomEmoji fixes -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EventFlow" />
+    <!--<ProjectReference Include="..\EventFlow\EventFlow.csproj" />-->
+    <ProjectReference Include="..\MyTelegram.Domain.Shared\MyTelegram.Domain.Shared.csproj" />
+        <ProjectReference Include="..\MyTelegram.EventFlow\MyTelegram.EventFlow.csproj" />
+    <ProjectReference Include="..\MyTelegram.Schema\MyTelegram.Schema.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Fody">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+﻿global using MyTelegram.Abstractions;
+global using MyTelegram.Converters.Responses.Interfaces;
+global using MyTelegram.Converters.Responses.Interfaces.Auth;
+global using MyTelegram.Converters.Responses.Interfaces.Channels;
+global using MyTelegram.Converters.Responses.Interfaces.Chatlists;
+global using MyTelegram.Converters.Responses.Interfaces.Messages;
+global using MyTelegram.Converters.Responses.Interfaces.Payments;
+global using MyTelegram.Converters.TLObjects.Interfaces;
+global using MyTelegram.Core;
+global using MyTelegram.ReadModel.Interfaces;
+global using MyTelegram.Schema;
+global using MyTelegram.Schema.Extensions;
+global using MyTelegram.Services.Extensions;
+global using MyTelegram.Services.Services;
+global using MyTelegram.Services.TLObjectConverters;

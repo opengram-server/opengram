@@ -1,0 +1,172 @@
+{
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "Default": "mongodb://localhost:27017?maxPoolSize=10000"
+  },
+  "App": {
+    "DatabaseName": "tg",// events
+    "ReadModelDatabaseName": "tg",// readmodels
+    "FileServerGrpcServiceUrl": "http://localhost:10001",
+    //will use the fixed verify code if value is not empty
+    "FixedVerifyCode": null,
+    "VerificationCodeLength": 5,
+    "FixedEmailVerificationCode": null,
+    "VerificationCodeExpirationSeconds": 300,
+    "JoinChatDomain": "https://t.me",
+    "ChannelGetDifferenceIntervalSeconds": 60,
+    "UseInMemoryFilters": true,
+    "IsMediaDc": false,
+    // if true,call createChat will auto create super group
+    "AutoCreateSuperGroup": true,
+    "EnableFutureAuthToken": true,
+    "SetPremiumToTrueAfterUserCreated": true,
+    "SendWelcomeMessageAfterUserSignIn": false,
+    "SetupPasswordRequired": false,
+    "EnableEmailLogin": true,
+    "SupportUserId": null,
+    "CheckPhoneNumberFormat": true,
+    "EnableSearchNonContacts": false, // Search users by first and last name
+    "MaxInMemoryContactCount": 100000, // Load all contacts into memory if total contacts count < MaxInMemoryContactCount
+    "RpcResultExpirationMinutes": 30,
+    "FrozenAccountSnowflakeEmojiId": 1766241385231478, // Document ID of animated snowflake TGS for frozen accounts (set after upload)
+    "WebRtcConnections": [
+      {
+        "Ip": "192.168.1.100",
+        "Ipv6": "",
+        "Port": 20444,
+        "Turn": true,
+        "Stun": true,
+        "UserName": "a",
+        "Password": "b"
+      }
+    ],
+    "GroupCallSfu": {
+      "Endpoint": "127.0.0.1",
+      "Port": 10000,
+      "PublicIp": "127.0.0.1",
+      "ApiUrl": "http://host.docker.internal:3200"
+    },
+    "ThisDcId": 1,
+    "DcOptions": [
+      // Main DC server
+      {
+        "Enabled": true,
+        "Id": 1,
+        "IpAddress": "192.168.1.100",
+        "Port": 20443,
+        "TcpoOnly": false,
+        "ThisPortOnly": true,
+        "Ipv6": false,
+        "Cdn": false,
+        "MediaOnly": false,
+        "Static": false
+      },
+
+      // Local bot API DC server
+      {
+        "Enabled": true,
+        "Id": 2,
+        "IpAddress": "192.168.1.100",
+        "Port": 20543,
+        "TcpoOnly": false,
+        "ThisPortOnly": true,
+        "Ipv6": false,
+        "Cdn": false,
+        "MediaOnly": false,
+        "Static": false
+      },
+
+      // Media DC server
+      {
+        "Enabled": true,
+        "Id": 1,
+        "IpAddress": "192.168.1.100",
+        "Port": 20643,
+        "TcpoOnly": false,
+        "ThisPortOnly": true,
+        "Ipv6": false,
+        "Cdn": false,
+        "MediaOnly": true,
+        "Static": false
+      },
+      {
+        "Enabled": true,
+        "Id": 2,
+        "IpAddress": "192.168.1.100",
+        "Port": 20644,
+        "TcpoOnly": false,
+        "ThisPortOnly": true,
+        "Ipv6": false,
+        "Cdn": false,
+        "MediaOnly": true,
+        "Static": false
+      }
+    ]
+  },
+  "RabbitMQ": {
+    "Connections": {
+      "Default": {
+        "HostName": "localhost",
+        "Port": 5672,
+        "UserName": "test",
+        "Password": "test"
+      }
+    },
+    "EventBus": {
+      "ClientName": "MyTelegramMessengerQueryServer",
+      "ExchangeName": "MyTelegramExchange"
+    }
+  },
+  "Redis": {
+    "Configuration": "localhost:6379"
+  },
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.File",
+      "Serilog.Sinks.Async"
+    ],
+    "MinimumLevel": {
+      "Default": "Warning",
+      "Override": {
+        "Microsoft": "Warning",
+        "EventFlow": "Warning",
+        "MyTelegram.Services.Services.DefaultDataProcessor": "Warning",
+        "MyTelegram.QueryHandlers.MongoDB.StarGift.GetUserStarGiftsQueryHandler": "Warning",
+        "MyTelegram.Messenger.Handlers": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Async",
+        "Args": {
+          "configure": [
+            {
+              "Name": "Console",
+              "Args": {
+                "outputTemplate": "[{Timestamp:o} [{Level:u3}] {Message}{NewLine}{Exception}",
+                "theme": "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Code, Serilog.Sinks.Console"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "Name": "Async",
+        "Args": {
+          "configure": [
+            {
+              "Name": "File",
+              "Args": {
+                "rollingInterval": "Day",
+                //"buffered": true,
+                "path": "./Logs/log-.txt",
+                "outputTemplate": "{Timestamp:o} [{Level:u3}] {Message}{NewLine}{Exception}"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

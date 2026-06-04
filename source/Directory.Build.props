@@ -1,0 +1,60 @@
+<Project>
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- <VersionSuffix>0.6.$([System.DateTime]::Now.ToString(MMdd)).$([System.DateTime]::Now.ToString("HHmm"))</VersionSuffix> -->
+    <VersionSuffix>0.32.206.$([System.DateTime]::Now.ToString("Mdd"))</VersionSuffix>
+    <AssemblyVersion Condition="'$(VersionSuffix)' =='' ">0.0.0.1</AssemblyVersion>
+    <AssemblyVersion Condition="'$(VersionSuffix)' !='' ">$(VersionSuffix)</AssemblyVersion>
+    <Version Condition="'$(VersionSuffix)' =='' ">0.0.1.0</Version>
+    <Version Condition="'$(VersionSuffix)' !='' ">$(VersionSuffix)</Version>
+    <NoWarn>$(NoWarn);CS1591;CS0436;NU1803;</NoWarn>
+    <Authors>MyTelegram</Authors>
+    <RepositoryUrl>https://github.com/loyldg/mytelegram</RepositoryUrl>
+    <Company>MyTelegram</Company>
+    <Copyright>Copyright (c) MyTelegram 2021 - $([System.DateTime]::Now.ToString("yyyy"))</Copyright>
+
+    <IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+    <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+    <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+  </PropertyGroup>
+  <!-- 
+  <PropertyGroup>
+        <OutputPath>$(MSBuildThisFileDirectory)out\local\$(AssemblyVersion)\$(Configuration)\$(MSBuildProjectName.Replace("MyTelegram.", ""))</OutputPath>
+      </PropertyGroup> -->
+
+  <PropertyGroup Condition="'$(IsWindows)'=='true'">
+    <DefineConstants>Windows</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsOSX)'=='true'">
+    <DefineConstants>OSX</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsLinux)'=='true'">
+    <DefineConstants>Linux</DefineConstants>
+  </PropertyGroup>
+<!--
+   <PropertyGroup>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+  </PropertyGroup>
+  -->
+  
+   <ItemGroup>
+      <PackageReference Include="ConfigureAwait.Fody" PrivateAssets="All" />
+      <PackageReference Include="Fody" >
+        <PrivateAssets>All</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      </PackageReference>
+  </ItemGroup>
+</Project>

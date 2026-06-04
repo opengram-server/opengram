@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Protos\botservice.proto" />
+    <None Remove="Protos\chatmemberloaderservice.proto" />
+    <None Remove="Protos\chatservice.proto" />
+    <None Remove="Protos\idgeneratorservice.proto" />
+    <None Remove="Protos\mediaservice.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <!--<PackageReference Include="Grpc" Version="2.46.3" />-->
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--<Protobuf Include="Protos\chatservice.proto" />-->
+    <Protobuf Include="Protos\chatmemberloaderservice.proto" GrpcServices="Server" />
+    <Protobuf Include="Protos\idgeneratorservice.proto" GrpcServices="Client" />
+    <Protobuf Include="Protos\mediaservice.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Fody">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

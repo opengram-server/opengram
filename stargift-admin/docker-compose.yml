@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  stargift-admin-backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      # ✅ Updated with correct credentials from docker/compose/.env
+      - MONGODB_URI=mongodb://user:CHANGE_ME@mongodb:27017/tg?authSource=admin
+      - DB_NAME=tg
+      - PORT=3001
+      - CORS_ORIGIN=http://localhost:5173
+      - ADMIN_API_URL=http://localhost:5555
+      - ADMIN_API_KEY=CHANGE_ME
+      # ✅ MinIO credentials
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=CHANGE_ME
+      # ✅ RabbitMQ credentials
+      - RABBITMQ_URL=amqp://user:CHANGE_ME@rabbitmq:5672
+    networks:
+      - default
+      - compose_default
+
+  stargift-admin-frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - stargift-admin-backend
+    networks:
+      - default
+
+networks:
+  compose_default:
+    external: true
