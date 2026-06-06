@@ -1,6 +1,7 @@
 # Opengram
 
 Opengram — это самостоятельный сервер Telegram, написанный на C# (.NET 9). Проект является форком [mytelegram](https://github.com/loyldg/mytelegram) и реализует серверную часть API Telegram (MTProto), которую можно развернуть на собственной инфраструктуре.
+Наш телеграм канал: https://t.me/opengrame
 
 ## Возможности
 
