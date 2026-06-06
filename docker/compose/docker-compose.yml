@@ -457,9 +457,7 @@ services:
     build:
       context: ../../source
       dockerfile: src/MyTelegram.Messenger.QueryServer/Dockerfile
-    image: mytelegram-messenger-query-server-local:latest
-    # Always build locally — this image is not in any registry, so never try to pull it
-    pull_policy: build
+    #image: mytelegram-messenger-query-server-local:latest
     restart: always
     networks:
       - tg-net
