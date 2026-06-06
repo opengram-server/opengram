@@ -12,7 +12,11 @@ namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 /// See <a href="https://corefork.telegram.org/method/messages.startBot" />
 ///</summary>
 internal sealed class StartBotHandler(
-    IAccessHashHelper accessHashHelper)
+    IAccessHashHelper accessHashHelper,
+    IPeerHelper peerHelper,
+    IMessageAppService messageAppService,
+    IRandomHelper randomHelper,
+    IQueryProcessor queryProcessor)
     : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestStartBot, MyTelegram.Schema.IUpdates>,
         Messages.IStartBotHandler
 {
@@ -21,13 +25,35 @@ internal sealed class StartBotHandler(
     {
         await accessHashHelper.CheckAccessHashAsync(input, obj.Peer);
 
-        if (obj.StartParam?.Length > 64)
+        if (obj.StartParam != null && obj.StartParam.Length > 64)
         {
             throw new RpcException(new RpcError(400, "START_PARAM_TOO_LONG"));
         }
 
-        // Bot start requires the full message sending pipeline via IMessageAppService.
-        // The /start message is sent as a regular message through the normal flow.
-        throw new RpcException(new RpcError(400, "BOT_INVALID"));
+        // Validate the bot user
+        var botPeer = peerHelper.GetPeer(obj.Bot, input.UserId);
+        var botUser = await queryProcessor.ProcessAsync(new GetUserByIdQuery(botPeer.PeerId));
+        if (botUser == null || !botUser.Bot)
+        {
+            throw new RpcException(new RpcError(400, "BOT_INVALID"));
+        }
+
+        var peer = peerHelper.GetPeer(obj.Peer, input.UserId);
+
+        // Build the /start message
+        var message = string.IsNullOrEmpty(obj.StartParam)
+            ? "/start"
+            : $"/start {obj.StartParam}";
+
+        var sendMessageInput = new SendMessageInput(
+            input.ToRequestInfo(),
+            input.UserId,
+            peer,
+            message,
+            obj.RandomId);
+
+        await messageAppService.SendMessageAsync([sendMessageInput]);
+
+        return null!;
     }
 }

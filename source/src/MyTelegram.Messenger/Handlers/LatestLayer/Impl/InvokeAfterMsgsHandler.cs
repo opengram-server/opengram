@@ -1,19 +1,36 @@
-﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl;
+namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl;
 
 ///<summary>
 /// Invokes a query after a successful completion of previous queries.
 /// See <a href="https://corefork.telegram.org/method/invokeAfterMsgs" />
 ///</summary>
-internal sealed class InvokeAfterMsgsHandler
+internal sealed class InvokeAfterMsgsHandler(
+    IInvokeAfterMsgProcessor invokeAfterMsgProcessor)
     : RpcResultObjectHandler<MyTelegram.Schema.RequestInvokeAfterMsgs, IObject>,
         IInvokeAfterMsgsHandler
 {
-    protected override Task<IObject> HandleCoreAsync(IRequestInput input,
+    protected override async Task<IObject> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.RequestInvokeAfterMsgs obj)
     {
-        // invokeAfterMsgs is a wrapper that ensures query ordering.
-        // The actual query inside is executed by the transport layer.
-        // This handler should not normally be reached.
-        throw new RpcException(new RpcError(400, "INPUT_METHOD_INVALID"));
+        // Check if all prerequisite messages have been processed
+        var allProcessed = true;
+        foreach (var msgId in obj.MsgIds)
+        {
+            if (!invokeAfterMsgProcessor.ExistsInRecentMessageId(msgId))
+            {
+                allProcessed = false;
+                break;
+            }
+        }
+
+        if (allProcessed)
+        {
+            return await invokeAfterMsgProcessor.HandleAsync(input, obj.Query);
+        }
+
+        // Queue for later execution after the last prerequisite
+        var lastMsgId = obj.MsgIds[^1];
+        invokeAfterMsgProcessor.Enqueue(lastMsgId, input, obj.Query);
+        return null!;
     }
 }

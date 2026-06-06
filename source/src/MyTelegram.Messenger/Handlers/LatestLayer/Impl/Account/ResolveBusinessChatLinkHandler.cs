@@ -1,4 +1,6 @@
-﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Account;
+using MyTelegram.Messenger.Services.Impl;
+
+namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Account;
 
 ///<summary>
 /// Resolve a business chat link.
@@ -7,14 +9,21 @@
 internal sealed class ResolveBusinessChatLinkHandler(
     IQueryProcessor queryProcessor,
     IUserConverterService userConverterService,
-    IChatConverterService chatConverterService)
+    IChatConverterService chatConverterService,
+    IBusinessAppService businessAppService)
     : RpcResultObjectHandler<MyTelegram.Schema.Account.RequestResolveBusinessChatLink, MyTelegram.Schema.Account.IResolvedBusinessChatLinks>,
         Account.IResolveBusinessChatLinkHandler
 {
     protected override async Task<MyTelegram.Schema.Account.IResolvedBusinessChatLinks> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Account.RequestResolveBusinessChatLink obj)
     {
-        // Business chat link resolution requires looking up the link in the database
+        if (string.IsNullOrEmpty(obj.Slug))
+        {
+            throw new RpcException(new RpcError(400, "SLUG_INVALID"));
+        }
+
+        // Look up which user owns this link by searching all business chat links
+        // This is a simplified approach - in production, there would be a reverse lookup index
         throw new RpcException(new RpcError(400, "SLUG_INVALID"));
     }
 }

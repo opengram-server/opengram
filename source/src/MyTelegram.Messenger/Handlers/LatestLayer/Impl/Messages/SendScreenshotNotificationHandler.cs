@@ -9,7 +9,10 @@ namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 /// See <a href="https://corefork.telegram.org/method/messages.sendScreenshotNotification" />
 ///</summary>
 internal sealed class SendScreenshotNotificationHandler(
-    IAccessHashHelper accessHashHelper)
+    IAccessHashHelper accessHashHelper,
+    IPeerHelper peerHelper,
+    IMessageAppService messageAppService,
+    IRandomHelper randomHelper)
     : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestSendScreenshotNotification, MyTelegram.Schema.IUpdates>,
         Messages.ISendScreenshotNotificationHandler
 {
@@ -17,15 +20,22 @@ internal sealed class SendScreenshotNotificationHandler(
         RequestSendScreenshotNotification obj)
     {
         await accessHashHelper.CheckAccessHashAsync(input, obj.Peer);
-        // Screenshot notification is a service message action.
-        // Currently returns empty updates as the notification is acknowledged.
-        return new TUpdates
-        {
-            Updates = [],
-            Users = [],
-            Chats = [],
-            Date = CurrentDate,
-            Seq = 0
-        };
+        var peer = peerHelper.GetPeer(obj.Peer, input.UserId);
+
+        // Send a service message with messageActionScreenshotTaken
+        var sendMessageInput = new SendMessageInput(
+            input.ToRequestInfo(),
+            input.UserId,
+            peer,
+            string.Empty,
+            obj.RandomId,
+            sendMessageType: SendMessageType.MessageService,
+            messageType: MessageType.Unknown,
+            messageAction: new TMessageActionScreenshotTaken(),
+            inputReplyTo: obj.ReplyTo);
+
+        await messageAppService.SendMessageAsync([sendMessageInput]);
+
+        return null!;
     }
 }
