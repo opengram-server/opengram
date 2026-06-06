@@ -22,14 +22,14 @@ internal sealed class AllowSendMessageHandler(
 
         if (botUserId == 0)
         {
-            throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_INVALID" });
+            throw new RpcException(new RpcError(400, "BOT_INVALID"));
         }
 
         // Verify the target is actually a bot
         var botReadModel = await userAppService.GetAsync(botUserId);
         if (botReadModel == null || !botReadModel.Bot)
         {
-            throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_INVALID" });
+            throw new RpcException(new RpcError(400, "BOT_INVALID"));
         }
 
         logger.LogDebug("AllowSendMessage: User {UserId} allowed bot {BotUserId} to send messages",

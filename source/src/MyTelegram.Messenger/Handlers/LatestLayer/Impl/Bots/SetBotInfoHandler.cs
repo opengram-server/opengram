@@ -31,7 +31,7 @@ internal sealed class SetBotInfoHandler(
         {
             if (obj.Name.Length > 64)
             {
-                throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "NAME_NOT_MODIFIED" });
+                throw new RpcException(new RpcError(400, "NAME_NOT_MODIFIED"));
             }
             updateDefinitions.Add(Builders<BotReadModel>.Update.Set(b => b.BotName, obj.Name));
         }
@@ -40,7 +40,7 @@ internal sealed class SetBotInfoHandler(
         {
             if (obj.About.Length > 120)
             {
-                throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "ABOUT_TOO_LONG" });
+                throw new RpcException(new RpcError(400, "ABOUT_TOO_LONG"));
             }
             updateDefinitions.Add(Builders<BotReadModel>.Update.Set(b => b.About, obj.About));
         }
@@ -49,7 +49,7 @@ internal sealed class SetBotInfoHandler(
         {
             if (obj.Description.Length > 512)
             {
-                throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "DESCRIPTION_TOO_LONG" });
+                throw new RpcException(new RpcError(400, "DESCRIPTION_TOO_LONG"));
             }
             updateDefinitions.Add(Builders<BotReadModel>.Update.Set(b => b.Description, obj.Description));
         }
@@ -62,7 +62,7 @@ internal sealed class SetBotInfoHandler(
             if (result.MatchedCount == 0)
             {
                 logger.LogWarning("SetBotInfo: Bot not found for UserId={BotUserId}", botUserId);
-                throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_INVALID" });
+                throw new RpcException(new RpcError(400, "BOT_INVALID"));
             }
 
             logger.LogDebug("SetBotInfo: Updated info for BotUserId={BotUserId}", botUserId);

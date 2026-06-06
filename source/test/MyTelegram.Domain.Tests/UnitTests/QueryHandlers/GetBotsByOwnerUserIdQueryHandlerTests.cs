@@ -1,5 +1,6 @@
 using Moq;
 using Microsoft.Extensions.Logging;
+using MyTelegram.EventFlow.ReadStores;
 using MyTelegram.Queries;
 using MyTelegram.ReadModel.Impl;
 using MyTelegram.ReadModel.Interfaces;
@@ -22,6 +23,9 @@ public class GetBotsByOwnerUserIdQueryHandlerTests : MyTelegramTestBase
         storeMock
             .Setup(s => s.FindAsync(
                 It.IsAny<System.Linq.Expressions.Expression<Func<BotReadModel, bool>>>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<SortOptions<BotReadModel>?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(bots ?? Array.Empty<BotReadModel>());
         return storeMock;

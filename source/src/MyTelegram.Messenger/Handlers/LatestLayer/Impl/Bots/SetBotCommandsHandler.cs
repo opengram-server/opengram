@@ -19,7 +19,7 @@ internal sealed class SetBotCommandsHandler(
         // Validate commands per Telegram spec
         if (obj.Commands.Count > 100)
         {
-            throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOTS_TOO_MUCH" });
+            throw new RpcException(new RpcError(400, "BOTS_TOO_MUCH"));
         }
 
         foreach (var botCommand in obj.Commands)
@@ -28,12 +28,12 @@ internal sealed class SetBotCommandsHandler(
             {
                 if (string.IsNullOrEmpty(cmd.Command) || cmd.Command.Length > 32)
                 {
-                    throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_COMMAND_INVALID" });
+                    throw new RpcException(new RpcError(400, "BOT_COMMAND_INVALID"));
                 }
 
                 if (string.IsNullOrEmpty(cmd.Description) || cmd.Description.Length > 256)
                 {
-                    throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_COMMAND_DESCRIPTION_INVALID" });
+                    throw new RpcException(new RpcError(400, "BOT_COMMAND_DESCRIPTION_INVALID"));
                 }
             }
         }

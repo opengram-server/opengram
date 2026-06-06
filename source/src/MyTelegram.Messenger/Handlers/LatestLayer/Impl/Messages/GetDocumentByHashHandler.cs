@@ -12,9 +12,9 @@ internal sealed class GetDocumentByHashHandler
         MyTelegram.Schema.Messages.RequestGetDocumentByHash obj)
     {
         // Validate the hash is a proper SHA256 (32 bytes)
-        if (obj.Sha256 == null || obj.Sha256.Length != 32)
+        if (obj.Sha256.IsEmpty || obj.Sha256.Length != 32)
         {
-            throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "SHA256_HASH_INVALID" });
+            throw new RpcException(new RpcError(400, "SHA256_HASH_INVALID"));
         }
 
         // Document deduplication by hash is not implemented yet.

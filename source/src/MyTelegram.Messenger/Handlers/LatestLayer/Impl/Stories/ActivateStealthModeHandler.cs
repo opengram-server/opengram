@@ -2,21 +2,36 @@ namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Stories;
 
 ///<summary>
 /// Activates stories stealth mode, see here for more info.
+/// Per corefork: requires Premium, hides story views for 25 minutes,
+/// also hides views from the past 5 minutes. 1 hour cooldown.
 /// See <a href="https://corefork.telegram.org/method/stories.activateStealthMode" />
 ///</summary>
-internal sealed class ActivateStealthModeHandler
+internal sealed class ActivateStealthModeHandler(
+    IUserAppService userAppService)
     : RpcResultObjectHandler<MyTelegram.Schema.Stories.RequestActivateStealthMode, MyTelegram.Schema.IUpdates>,
     Stories.IActivateStealthModeHandler
 {
-    protected override Task<IUpdates> HandleCoreAsync(IRequestInput input,
+    protected override async Task<IUpdates> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Stories.RequestActivateStealthMode obj)
     {
+        // Per corefork: stealth mode requires a Premium subscription
+        var userReadModel = await userAppService.GetAsync(input.UserId);
+        if (userReadModel == null)
+        {
+            RpcErrors.RpcErrors400.UserIdInvalid.ThrowRpcError();
+        }
+
+        if (!userReadModel!.Premium)
+        {
+            throw new RpcException(RpcErrors.RpcErrors400.PremiumAccountRequired);
+        }
+
         // Stealth mode hides that the user viewed stories for 25 minutes
         // and also hides views from the past 5 minutes.
-        // Per corefork.telegram.org: returns updates with storiesStealthMode constructor
+        // Returns updates with storiesStealthMode constructor
         var now = CurrentDate;
 
-        return Task.FromResult<IUpdates>(new TUpdates
+        return new TUpdates
         {
             Updates = new TVector<IUpdate>(new List<IUpdate>
             {
@@ -32,6 +47,6 @@ internal sealed class ActivateStealthModeHandler
             Users = [],
             Chats = [],
             Date = now
-        });
+        };
     }
 }
