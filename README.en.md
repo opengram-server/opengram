@@ -7,7 +7,7 @@ Our Telegram channel: https://t.me/opengrame
 
 ## Features
 
-- MTProto transports (Abridged, Intermediate);
+- MTProto transports (Abridged, Intermediate), supports up to layer 216;
 - private chats, groups, supergroups and channels;
 - secret (end-to-end) chats;
 - voice and video calls (via TURN/STUN and the mediasoup SFU);

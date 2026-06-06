@@ -7,7 +7,7 @@ Opengram — это самостоятельный сервер Telegram, нап
 
 ## Возможности
 
-- MTProto-транспорты (Abridged, Intermediate);
+- MTProto-транспорты (Abridged, Intermediate), поддержка layer до 216;
 - личные чаты, группы, супергруппы и каналы;
 - секретные (end-to-end) чаты;
 - голосовые и видеозвонки (через TURN/STUN и SFU mediasoup);
