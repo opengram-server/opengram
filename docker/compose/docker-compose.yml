@@ -142,6 +142,10 @@ services:
     volumes:
       - ./data/mytelegram/gateway/logs:/app/Logs
       - ./secrets/mtproto:/app/secrets/mtproto:ro
+
+      # Fixes for mytelegram 
+      - ./secrets/mtproto/rsa_certificate.pem:/app/_wildcard.telegram2.com.pem:ro
+      - ./secrets/mtproto/rsa_private.pem:/app/_wildcard.telegram2.com-key.pem:ro
     environment:
       Serilog__MinimumLevel__Default: ${Serilog__MinimumLevel__Default}
       App__ThisDcId: ${App__ThisDcId}
