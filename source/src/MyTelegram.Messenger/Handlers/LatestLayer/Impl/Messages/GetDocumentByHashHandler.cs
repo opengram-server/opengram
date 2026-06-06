@@ -11,8 +11,15 @@ internal sealed class GetDocumentByHashHandler
     protected override Task<IDocument> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Messages.RequestGetDocumentByHash obj)
     {
-        // Document not found by hash - this is normal when the file
-        // hasn't been uploaded yet. Return TDocumentEmpty.
+        // Validate the hash is a proper SHA256 (32 bytes)
+        if (obj.Sha256 == null || obj.Sha256.Length != 32)
+        {
+            throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "SHA256_HASH_INVALID" });
+        }
+
+        // Document deduplication by hash is not implemented yet.
+        // Per Telegram spec, returning TDocumentEmpty tells the client
+        // "not cached, upload it yourself".
         return Task.FromResult<IDocument>(new TDocumentEmpty());
     }
 }

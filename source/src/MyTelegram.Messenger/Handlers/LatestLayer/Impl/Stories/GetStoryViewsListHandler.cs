@@ -40,7 +40,8 @@ internal sealed class GetStoryViewsListHandler(
             RpcErrors.RpcErrors400.StoryNotFound.ThrowRpcError();
         }
 
-        // Return empty views list - full viewer tracking would require a separate read model
+        // Individual viewer tracking requires a StoryViewerReadModel.
+        // Counts are accurate from the story aggregate; the per-user list is empty.
         return new Schema.Stories.TStoryViewsList
         {
             Count = story!.ViewsCount,

@@ -23,6 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MyTelegram.Domain\MyTelegram.Domain.csproj" />
     <ProjectReference Include="..\..\src\MyTelegram.TestBase\MyTelegram.TestBase.csproj" />
+    <ProjectReference Include="..\..\src\MyTelegram.QueryHandlers.MongoDB\MyTelegram.QueryHandlers.MongoDB.csproj" />
+    <ProjectReference Include="..\..\src\MyTelegram.Queries\MyTelegram.Queries.csproj" />
+    <ProjectReference Include="..\..\src\MyTelegram.ReadModel\MyTelegram.ReadModel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

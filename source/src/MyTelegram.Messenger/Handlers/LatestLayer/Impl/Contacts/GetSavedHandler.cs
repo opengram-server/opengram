@@ -1,7 +1,7 @@
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Contacts;
 
 ///<summary>
-/// Returns the list of contacts with saved (non-deleted) Telegram accounts.
+/// Returns the list of contacts available for synchronization.
 /// See <a href="https://corefork.telegram.org/method/contacts.getSaved" />
 ///</summary>
 internal sealed class GetSavedHandler
@@ -11,9 +11,9 @@ internal sealed class GetSavedHandler
     protected override Task<TVector<ISavedContact>> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Contacts.RequestGetSaved obj)
     {
-        // Return an empty saved contacts list — the full contact sync
-        // happens via contacts.getContacts. This endpoint is for the
-        // subset that have been explicitly saved.
+        // Saved contacts synchronization requires a SavedContactReadModel
+        // that stores phone-number-only contacts (not yet registered users).
+        // Return an empty list — client will not show phantom contacts.
         return Task.FromResult<TVector<ISavedContact>>([]);
     }
 }

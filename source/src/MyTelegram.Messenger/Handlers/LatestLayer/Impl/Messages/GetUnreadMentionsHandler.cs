@@ -4,21 +4,25 @@ namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 /// Get unread mentions.
 /// See <a href="https://corefork.telegram.org/method/messages.getUnreadMentions" />
 ///</summary>
-internal sealed class GetUnreadMentionsHandler
+internal sealed class GetUnreadMentionsHandler(
+    IPeerHelper peerHelper,
+    IAccessHashHelper accessHashHelper)
     : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestGetUnreadMentions, MyTelegram.Schema.Messages.IMessages>,
     Messages.IGetUnreadMentionsHandler
 {
-    protected override Task<MyTelegram.Schema.Messages.IMessages> HandleCoreAsync(IRequestInput input,
+    protected override async Task<MyTelegram.Schema.Messages.IMessages> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Messages.RequestGetUnreadMentions obj)
     {
-        // Return an empty message list - full mention tracking requires
-        // cross-referencing with the mention index in the dialog.
-        return Task.FromResult<MyTelegram.Schema.Messages.IMessages>(
-            new MyTelegram.Schema.Messages.TMessages
-            {
-                Messages = [],
-                Chats = [],
-                Users = []
-            });
+        var peer = peerHelper.GetPeer(obj.Peer, input.UserId);
+        await accessHashHelper.CheckAccessHashAsync(input, obj.Peer);
+
+        // Mention tracking requires a dedicated MentionReadModel.
+        // Return an empty message list — clients will display no unread mentions.
+        return new MyTelegram.Schema.Messages.TMessages
+        {
+            Messages = [],
+            Chats = [],
+            Users = []
+        };
     }
 }

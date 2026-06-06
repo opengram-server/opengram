@@ -1,39 +1,65 @@
+using MongoDB.Driver;
+
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Bots;
 
 ///<summary>
-/// Set bot command list.
+/// Set bot commands for the specified bot scope and language.
 /// See <a href="https://corefork.telegram.org/method/bots.setBotCommands" />
 ///</summary>
-internal sealed class SetBotCommandsHandler
+internal sealed class SetBotCommandsHandler(
+    IQueryProcessor queryProcessor,
+    IMongoDatabase mongoDatabase,
+    ILogger<SetBotCommandsHandler> logger)
     : RpcResultObjectHandler<MyTelegram.Schema.Bots.RequestSetBotCommands, IBool>,
     Bots.ISetBotCommandsHandler
 {
-    protected override Task<IBool> HandleCoreAsync(IRequestInput input,
+    protected override async Task<IBool> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Bots.RequestSetBotCommands obj)
     {
-        // Validate input
-        if (obj.Commands == null || obj.Commands.Count == 0)
+        // Validate commands per Telegram spec
+        if (obj.Commands.Count > 100)
         {
-            return Task.FromResult<IBool>(new TBoolTrue());
+            throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOTS_TOO_MUCH" });
         }
 
-        foreach (var cmd in obj.Commands)
+        foreach (var botCommand in obj.Commands)
         {
-            if (cmd is TBotCommand botCommand)
+            if (botCommand is TBotCommand cmd)
             {
-                if (string.IsNullOrEmpty(botCommand.Command) || botCommand.Command.Length > 32)
+                if (string.IsNullOrEmpty(cmd.Command) || cmd.Command.Length > 32)
                 {
-                    RpcErrors.RpcErrors400.BotCommandInvalid.ThrowRpcError();
+                    throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_COMMAND_INVALID" });
                 }
 
-                if (string.IsNullOrEmpty(botCommand.Description) || botCommand.Description.Length > 256)
+                if (string.IsNullOrEmpty(cmd.Description) || cmd.Description.Length > 256)
                 {
-                    RpcErrors.RpcErrors400.BotCommandDescriptionInvalid.ThrowRpcError();
+                    throw new RpcException(new TRpcError { ErrorCode = 400, ErrorMessage = "BOT_COMMAND_DESCRIPTION_INVALID" });
                 }
             }
         }
 
-        // Commands are accepted — persistence is handled via the bot read model event flow
-        return Task.FromResult<IBool>(new TBoolTrue());
+        // Convert to domain model
+        var commands = obj.Commands
+            .OfType<TBotCommand>()
+            .Select(c => new BotCommand(c.Command, c.Description))
+            .ToList();
+
+        // Persist to BotReadModel
+        var collection = mongoDatabase.GetCollection<BotReadModel>("ReadModel-BotReadModel");
+        var filter = Builders<BotReadModel>.Filter.Eq(b => b.UserId, input.UserId);
+        var update = Builders<BotReadModel>.Update.Set(b => b.Commands, commands);
+
+        var result = await collection.UpdateOneAsync(filter, update);
+
+        if (result.MatchedCount == 0)
+        {
+            logger.LogWarning("SetBotCommands: Bot not found for UserId={UserId}", input.UserId);
+        }
+        else
+        {
+            logger.LogDebug("SetBotCommands: Updated {Count} commands for UserId={UserId}", commands.Count, input.UserId);
+        }
+
+        return new TBoolTrue();
     }
 }
