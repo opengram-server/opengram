@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cube.Timer" />
+  <PackageReference Include="Cube.Timer" />
+  <ProjectReference Include="..\MyTelegram.EventFlow\MyTelegram.EventFlow.csproj" />
     <ProjectReference Include="..\MyTelegram.Core\MyTelegram.Core.csproj" />
     <ProjectReference Include="..\MyTelegram.Domain.Shared\MyTelegram.Domain.Shared.csproj" />
     <ProjectReference Include="..\MyTelegram.EventBus.RabbitMQ\MyTelegram.EventBus.RabbitMQ.csproj" />

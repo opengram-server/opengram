@@ -9,9 +9,12 @@
         <ProjectReference Include="..\MyTelegram.Domain\MyTelegram.Domain.csproj" />
         <ProjectReference Include="..\MyTelegram.ReadModel.Interfaces\MyTelegram.ReadModel.Interfaces.csproj" />
         <ProjectReference Include="..\MyTelegram.EventFlow.MongoDB\MyTelegram.EventFlow.MongoDB.csproj" />
+        <ProjectReference Include="..\MyTelegram.EventFlow\MyTelegram.EventFlow.csproj" />
         <PackageReference Include="EventFlow.MongoDB" />
+        <PackageReference Include="EventFlow" />
+        
     </ItemGroup>
-
+    
     <ItemGroup>
       <PackageReference Update="Fody">
         <PrivateAssets>all</PrivateAssets>

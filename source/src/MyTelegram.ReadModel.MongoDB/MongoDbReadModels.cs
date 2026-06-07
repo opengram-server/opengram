@@ -57,9 +57,9 @@ public class DraftReadModel : Impl.DraftReadModel, IMongoDbReadModel
 {
 }
 
-//public class EncryptedChatReadModel : Impl.EncryptedChatReadModel, IMongoDbReadModel
-//{
-//}
+public class EncryptedChatReadModel : Impl.EncryptedChatReadModel, IMongoDbReadModel
+{
+}
 
 //public class EncryptedMessageReadModel : Impl.EncryptedMessageReadModel, IMongoDbReadModel
 //{

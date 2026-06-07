@@ -1,15 +1,19 @@
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Contacts;
 
 ///<summary>
-/// Get all contacts, requires a <a href="https://corefork.telegram.org/api/takeout">takeout session, see here » for more info</a>.
+/// Returns the list of contacts available for synchronization.
 /// See <a href="https://corefork.telegram.org/method/contacts.getSaved" />
 ///</summary>
-internal sealed class GetSavedHandler : RpcResultObjectHandler<MyTelegram.Schema.Contacts.RequestGetSaved, TVector<MyTelegram.Schema.ISavedContact>>,
+internal sealed class GetSavedHandler
+    : RpcResultObjectHandler<MyTelegram.Schema.Contacts.RequestGetSaved, TVector<MyTelegram.Schema.ISavedContact>>,
     Contacts.IGetSavedHandler
 {
-    protected override Task<TVector<MyTelegram.Schema.ISavedContact>> HandleCoreAsync(IRequestInput input,
+    protected override Task<TVector<ISavedContact>> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Contacts.RequestGetSaved obj)
     {
-        throw new NotImplementedException();
+        // Saved contacts synchronization requires a SavedContactReadModel
+        // that stores phone-number-only contacts (not yet registered users).
+        // Return an empty list â€” client will not show phantom contacts.
+        return Task.FromResult<TVector<ISavedContact>>([]);
     }
 }

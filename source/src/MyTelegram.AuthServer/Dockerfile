@@ -23,10 +23,23 @@ COPY ["src/MyTelegram.EventBus.Rebus/MyTelegram.EventBus.Rebus.csproj", "src/MyT
 COPY ["src/MyTelegram.EventBus/MyTelegram.EventBus.csproj", "src/MyTelegram.EventBus/"]
 COPY ["src/MyTelegram.Services/MyTelegram.Services.csproj", "src/MyTelegram.Services/"]
 COPY ["src/MyTelegram.EventFlow/MyTelegram.EventFlow.csproj", "src/MyTelegram.EventFlow/"]
-RUN dotnet restore "./src/MyTelegram.AuthServer/MyTelegram.AuthServer.csproj"
-COPY . .
+RUN --mount=type=cache,id=nuget-mytelegram-auth-server,target=/root/.nuget/packages \
+	dotnet restore "./src/MyTelegram.AuthServer/MyTelegram.AuthServer.csproj"
+COPY src/MyTelegram.AuthServer/. ./src/MyTelegram.AuthServer/
+COPY src/MyTelegram.Caching.Redis/. ./src/MyTelegram.Caching.Redis/
+COPY src/MyTelegram.EventBus.RabbitMQ/. ./src/MyTelegram.EventBus.RabbitMQ/
+COPY src/MyTelegram.Services/. ./src/MyTelegram.Services/
+COPY src/MyTelegram.Core/. ./src/MyTelegram.Core/
+COPY src/MyTelegram.Abstractions/. ./src/MyTelegram.Abstractions/
+COPY src/MyTelegram.Domain.Shared/. ./src/MyTelegram.Domain.Shared/
+COPY src/MyTelegram.Schema/. ./src/MyTelegram.Schema/
+COPY src/MyTelegram.EventBus/. ./src/MyTelegram.EventBus/
+COPY src/MyTelegram.EventFlow/. ./src/MyTelegram.EventFlow/
+COPY src/MyTelegram.Messenger/. ./src/MyTelegram.Messenger/
 WORKDIR "/src/src/MyTelegram.AuthServer"
-RUN dotnet build "./MyTelegram.AuthServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN --mount=type=cache,id=nuget-mytelegram-auth-server,target=/root/.nuget/packages \
+	--mount=type=cache,id=msbuild-mytelegram-auth-server,target=/src/.msbuild \
+	dotnet build "./MyTelegram.AuthServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish

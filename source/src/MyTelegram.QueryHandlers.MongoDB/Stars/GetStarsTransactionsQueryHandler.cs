@@ -41,7 +41,7 @@ public class GetStarsTransactionsQueryHandler(IQueryOnlyReadModelStore<StarsRead
         {
             Id = x.Id,
             Amount = x.Amount,
-            Date = (int)(x.Date.Subtract(DateTime.UnixEpoch).TotalSeconds),
+            Date = x.Date,
             Title = x.Reason,
             PeerId = query.PeerId
         }).ToList();

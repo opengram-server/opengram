@@ -35,15 +35,46 @@ COPY ["src/MyTelegram.ReadModel/MyTelegram.ReadModel.csproj", "src/MyTelegram.Re
 COPY ["src/MyTelegram.ReadModel.MongoDB/MyTelegram.ReadModel.MongoDB.csproj", "src/MyTelegram.ReadModel.MongoDB/"]
 COPY ["src/MyTelegram.EventFlow.MongoDB/MyTelegram.EventFlow.MongoDB.csproj", "src/MyTelegram.EventFlow.MongoDB/"]
 COPY ["src/MyTelegram.ReadModel.InMemory/MyTelegram.ReadModel.InMemory.csproj", "src/MyTelegram.ReadModel.InMemory/"]
-RUN dotnet restore "./src/MyTelegram.Messenger.CommandServer/MyTelegram.Messenger.CommandServer.csproj"
-COPY . .
+COPY src/MyTelegram.Converters/. ./src/MyTelegram.Converters/
+COPY src/MyTelegram.ReadModel/. ./src/MyTelegram.ReadModel/
+COPY src/MyTelegram.ReadModel.Impl/. ./src/MyTelegram.ReadModel.Impl/
+RUN --mount=type=cache,id=nuget-mytelegram-messenger-command-server,target=/root/.nuget/packages \
+	dotnet restore "./src/MyTelegram.Messenger.CommandServer/MyTelegram.Messenger.CommandServer.csproj"
+COPY src/MyTelegram.Messenger.CommandServer/. ./src/MyTelegram.Messenger.CommandServer/
+COPY src/Microsoft.Cuckoo/. ./src/Microsoft.Cuckoo/
+COPY src/MyTelegram.Caching.Redis/. ./src/MyTelegram.Caching.Redis/
+COPY src/MyTelegram.Domain/. ./src/MyTelegram.Domain/
+COPY src/MyTelegram.GrpcService/. ./src/MyTelegram.GrpcService/
+COPY src/MyTelegram.Services/. ./src/MyTelegram.Services/
+COPY src/MyTelegram.Messenger/. ./src/MyTelegram.Messenger/
+COPY src/MyTelegram.Abstractions/. ./src/MyTelegram.Abstractions/
+COPY src/MyTelegram.Domain.Shared/. ./src/MyTelegram.Domain.Shared/
+COPY src/MyTelegram.Core/. ./src/MyTelegram.Core/
+COPY src/MyTelegram.EventBus/. ./src/MyTelegram.EventBus/
+COPY src/MyTelegram.Schema/. ./src/MyTelegram.Schema/
+COPY src/MyTelegram.ReadModel/. ./src/MyTelegram.ReadModel/
+COPY src/MyTelegram.Converters/. ./src/MyTelegram.Converters/
+COPY src/MyTelegram.ReadModel.Impl/. ./src/MyTelegram.ReadModel.Impl/
+COPY src/MyTelegram.ReadModel.MongoDB/. ./src/MyTelegram.ReadModel.MongoDB/
+COPY src/MyTelegram.ReadModel.Interfaces/. ./src/MyTelegram.ReadModel.Interfaces/
+COPY src/MyTelegram.Queries/. ./src/MyTelegram.Queries/
+COPY src/MyTelegram.QueryHandlers.MongoDB/. ./src/MyTelegram.QueryHandlers.MongoDB/
+COPY src/MyTelegram.MTProto/. ./src/MyTelegram.MTProto/
+COPY src/Microsoft.Cuckoo/. ./src/Microsoft.Cuckoo/
+COPY src/MyTelegram.EventFlow/. ./src/MyTelegram.EventFlow/
+COPY src/MyTelegram.EventFlow.MongoDB/. ./src/MyTelegram.EventFlow.MongoDB/
+COPY src/MyTelegram.EventBus.RabbitMQ/. ./src/MyTelegram.EventBus.RabbitMQ/
 WORKDIR "/src/src/MyTelegram.Messenger.CommandServer"
-RUN dotnet build "./MyTelegram.Messenger.CommandServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN --mount=type=cache,id=nuget-mytelegram-messenger-command-server,target=/root/.nuget/packages \
+	--mount=type=cache,id=msbuild-mytelegram-messenger-command-server,target=/src/.msbuild \
+	dotnet build "./MyTelegram.Messenger.CommandServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./MyTelegram.Messenger.CommandServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN --mount=type=cache,id=nuget-mytelegram-messenger-command-server,target=/root/.nuget/packages \
+	--mount=type=cache,id=msbuild-mytelegram-messenger-command-server,target=/src/.msbuild \
+	dotnet publish "./MyTelegram.Messenger.CommandServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final

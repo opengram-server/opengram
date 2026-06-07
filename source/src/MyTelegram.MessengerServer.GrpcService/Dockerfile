@@ -1,13 +1,13 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER app
 WORKDIR /app
 EXPOSE 8080
 
 # This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/MyTelegram.MessengerServer.GrpcService/MyTelegram.MessengerServer.GrpcService.csproj", "src/MyTelegram.MessengerServer.GrpcService/"]
@@ -20,8 +20,18 @@ COPY ["src/MyTelegram.EventFlow/MyTelegram.EventFlow.csproj", "src/MyTelegram.Ev
 COPY ["src/MyTelegram.Schema/MyTelegram.Schema.csproj", "src/MyTelegram.Schema/"]
 COPY ["src/MyTelegram.ReadModel.MongoDB/MyTelegram.ReadModel.MongoDB.csproj", "src/MyTelegram.ReadModel.MongoDB/"]
 COPY ["src/MyTelegram.EventFlow.MongoDB/MyTelegram.EventFlow.MongoDB.csproj", "src/MyTelegram.EventFlow.MongoDB/"]
-RUN dotnet restore "./src/MyTelegram.MessengerServer.GrpcService/MyTelegram.MessengerServer.GrpcService.csproj"
-COPY . .
+RUN --mount=type=cache,id=nuget-mytelegram-messenger-grpc-service,target=/root/.nuget/packages \
+	dotnet restore "./src/MyTelegram.MessengerServer.GrpcService/MyTelegram.MessengerServer.GrpcService.csproj"
+COPY src/MyTelegram.MessengerServer.GrpcService/. ./src/MyTelegram.MessengerServer.GrpcService/
+COPY src/MyTelegram.QueryHandlers.MongoDB/. ./src/MyTelegram.QueryHandlers.MongoDB/
+COPY src/MyTelegram.Core/. ./src/MyTelegram.Core/
+COPY src/MyTelegram.Abstractions/. ./src/MyTelegram.Abstractions/
+COPY src/MyTelegram.Schema/. ./src/MyTelegram.Schema/
+COPY src/MyTelegram.EventBus/. ./src/MyTelegram.EventBus/
+COPY src/MyTelegram.ReadModel.Impl/. ./src/MyTelegram.ReadModel.Impl/
+COPY src/MyTelegram.ReadModel.Interfaces/. ./src/MyTelegram.ReadModel.Interfaces/
+COPY src/MyTelegram.MTProto/. ./src/MyTelegram.MTProto/
+COPY src/Microsoft.Cuckoo/. ./src/Microsoft.Cuckoo/
 WORKDIR "/src/src/MyTelegram.MessengerServer.GrpcService"
 RUN dotnet build "./MyTelegram.MessengerServer.GrpcService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

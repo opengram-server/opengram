@@ -6,9 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\MyTelegram.ReadModel\MyTelegram.ReadModel.csproj" />
+      <ProjectReference Include="..\MyTelegram.ReadModel\MyTelegram.ReadModel.csproj" />
+      <PackageReference Include="EventFlow" />
     </ItemGroup>
-
     <ItemGroup>
       <PackageReference Update="Fody">
         <PrivateAssets>all</PrivateAssets>

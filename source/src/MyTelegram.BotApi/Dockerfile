@@ -29,12 +29,39 @@ COPY ["src/MyTelegram.Schema/MyTelegram.Schema.csproj", "src/MyTelegram.Schema/"
 # Restore dependencies
 RUN dotnet restore "src/MyTelegram.BotApi/MyTelegram.BotApi.csproj"
 
+RUN --mount=type=cache,id=nuget-mytelegram-botapi,target=/root/.nuget/packages \
+	dotnet restore "src/MyTelegram.BotApi/MyTelegram.BotApi.csproj"
+
 # Copy all source files
-COPY . .
+COPY src/MyTelegram.BotApi/. ./src/MyTelegram.BotApi/
+COPY src/MyTelegram.Domain.Shared/. ./src/MyTelegram.Domain.Shared/
+COPY src/MyTelegram.ReadModel.Interfaces/. ./src/MyTelegram.ReadModel.Interfaces/
+COPY src/MyTelegram.ReadModel/. ./src/MyTelegram.ReadModel/
+COPY src/MyTelegram.ReadModel.MongoDB/. ./src/MyTelegram.ReadModel.MongoDB/
+COPY src/MyTelegram.EventBus.RabbitMQ/. ./src/MyTelegram.EventBus.RabbitMQ/
+COPY src/MyTelegram.Abstractions/. ./src/MyTelegram.Abstractions/
+COPY src/MyTelegram.Core/. ./src/MyTelegram.Core/
+COPY src/MyTelegram.Schema/. ./src/MyTelegram.Schema/
+COPY src/MyTelegram.EventBus/. ./src/MyTelegram.EventBus/
+COPY src/MyTelegram.ReadModel.Impl/. ./src/MyTelegram.ReadModel.Impl/
+COPY src/MyTelegram.ReadModel.Interfaces/. ./src/MyTelegram.ReadModel.Interfaces/
+COPY src/MyTelegram.QueryHandlers.MongoDB/. ./src/MyTelegram.QueryHandlers.MongoDB/
+COPY src/MyTelegram.MTProto/. ./src/MyTelegram.MTProto/
+COPY src/Microsoft.Cuckoo/. ./src/Microsoft.Cuckoo/
+COPY src/MyTelegram.Domain/. ./src/MyTelegram.Domain/
+COPY src/MyTelegram.Messenger/. ./src/MyTelegram.Messenger/
+COPY src/MyTelegram.Queries/. ./src/MyTelegram.Queries/
+COPY src/MyTelegram.QueryHandlers.MongoDB/. ./src/MyTelegram.QueryHandlers.MongoDB/
+COPY src/MyTelegram.ReadModel.Impl/. ./src/MyTelegram.ReadModel.Impl/
+COPY src/MyTelegram.EventFlow/. ./src/MyTelegram.EventFlow/
+COPY src/MyTelegram.EventFlow.MongoDB/. ./src/MyTelegram.EventFlow.MongoDB/
 
 # Build
 WORKDIR "/src/src/MyTelegram.BotApi"
 RUN dotnet build "MyTelegram.BotApi.csproj" -c Release -o /app/build
+RUN --mount=type=cache,id=nuget-mytelegram-botapi,target=/root/.nuget/packages \
+	--mount=type=cache,id=msbuild-mytelegram-botapi,target=/src/.msbuild \
+	dotnet build "MyTelegram.BotApi.csproj" -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "MyTelegram.BotApi.csproj" -c Release -o /app/publish /p:UseAppHost=false

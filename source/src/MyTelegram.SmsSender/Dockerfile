@@ -20,12 +20,24 @@ COPY ["src/MyTelegram.Domain.Shared/MyTelegram.Domain.Shared.csproj", "src/MyTel
 COPY ["src/MyTelegram.Schema/MyTelegram.Schema.csproj", "src/MyTelegram.Schema/"]
 COPY ["src/MyTelegram.EventBus.Rebus/MyTelegram.EventBus.Rebus.csproj", "src/MyTelegram.EventBus.Rebus/"]
 COPY ["src/MyTelegram.EventBus/MyTelegram.EventBus.csproj", "src/MyTelegram.EventBus/"]
+COPY ["src/MyTelegram.EventBus.RabbitMQ/MyTelegram.EventBus.RabbitMQ.csproj", "src/MyTelegram.EventBus.RabbitMQ/"]
 COPY ["src/MyTelegram.Services/MyTelegram.Services.csproj", "src/MyTelegram.Services/"]
 COPY ["src/MyTelegram.EventFlow/MyTelegram.EventFlow.csproj", "src/MyTelegram.EventFlow/"]
-RUN dotnet restore "./src/MyTelegram.SmsSender/MyTelegram.SmsSender.csproj"
-COPY . .
+RUN --mount=type=cache,id=nuget-mytelegram-smssender,target=/root/.nuget/packages \
+	dotnet restore "./src/MyTelegram.SmsSender/MyTelegram.SmsSender.csproj"
+COPY src/MyTelegram.SmsSender/. ./src/MyTelegram.SmsSender/
+COPY src/MyTelegram.Core/. ./src/MyTelegram.Core/
+COPY src/MyTelegram.EventBus.RabbitMQ/. ./src/MyTelegram.EventBus.RabbitMQ/
+COPY src/MyTelegram.Services/. ./src/MyTelegram.Services/
+COPY src/MyTelegram.Abstractions/. ./src/MyTelegram.Abstractions/
+COPY src/MyTelegram.Domain.Shared/. ./src/MyTelegram.Domain.Shared/
+COPY src/MyTelegram.Schema/. ./src/MyTelegram.Schema/
+COPY src/MyTelegram.EventBus/. ./src/MyTelegram.EventBus/
+COPY src/MyTelegram.EventFlow/. ./src/MyTelegram.EventFlow/
 WORKDIR "/src/src/MyTelegram.SmsSender"
-RUN dotnet build "./MyTelegram.SmsSender.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN --mount=type=cache,id=nuget-mytelegram-smssender,target=/root/.nuget/packages \
+	--mount=type=cache,id=msbuild-mytelegram-smssender,target=/src/.msbuild \
+	dotnet build "./MyTelegram.SmsSender.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish

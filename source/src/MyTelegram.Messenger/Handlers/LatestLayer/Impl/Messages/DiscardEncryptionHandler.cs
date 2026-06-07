@@ -1,22 +1,34 @@
 // ReSharper disable All
 
+using MyTelegram.Domain.Aggregates.EncryptedChat;
+using MyTelegram.Domain.Commands.EncryptedChat;
+
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
 /// Cancels a request for creation and/or delete info on secret chat.
-/// <para>Possible errors</para>
-/// Code Type Description
-/// 400 CHAT_ID_EMPTY The provided chat ID is empty.
-/// 400 ENCRYPTION_ALREADY_DECLINED The secret chat was already declined.
-/// 400 ENCRYPTION_ID_INVALID The provided secret chat ID is invalid.
 /// See <a href="https://corefork.telegram.org/method/messages.discardEncryption" />
 ///</summary>
-internal sealed class DiscardEncryptionHandler : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestDiscardEncryption, IBool>,
+internal sealed class DiscardEncryptionHandler(
+    ICommandBus commandBus)
+    : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestDiscardEncryption, IBool>,
     Messages.IDiscardEncryptionHandler
 {
-    protected override Task<IBool> HandleCoreAsync(IRequestInput input,
+    protected override async Task<IBool> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Messages.RequestDiscardEncryption obj)
     {
-        throw new NotImplementedException();
+        if (obj.ChatId == 0)
+        {
+            RpcErrors.RpcErrors400.ChatIdEmpty.ThrowRpcError();
+        }
+
+        var command = new DiscardEncryptionCommand(
+            EncryptedChatId.Create(obj.ChatId),
+            input.ToRequestInfo(),
+            obj.DeleteHistory);
+
+        await commandBus.PublishAsync(command, default);
+
+        return new TBoolTrue();
     }
 }

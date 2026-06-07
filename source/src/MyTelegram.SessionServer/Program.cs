@@ -1,12 +1,15 @@
 using MongoDB.Driver;
-using MyTelegram.SessionServer.Services;
-using MyTelegram.SessionServer.Services.HostedServices;
+using MyTelegram.Core;
+using MyTelegram.Abstractions;
+using MyTelegram.EventBus.RabbitMQ.Extensions;
+using MyTelegram.SessionServer.Extensions;
+using MyTelegram.Services.Extensions;
 using Serilog;
 using StackExchange.Redis;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// 1. Logging
+// 1. Logging — Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -36,20 +39,27 @@ builder.Services.AddSingleton(sp =>
     return client.GetDatabase(dbName);
 });
 
-// 4. Application Services
-builder.Services.AddSingleton<ISessionManager, SessionManager>();
-builder.Services.AddSingleton<IMessageBusService, RabbitMQService>();
+// 4. Core services (from MyTelegram.Core — IMessageIdHelper, IObjectMapper, etc.)
+builder.Services.AddMyTelegramCoreServices();
 
-// 5. Hosted Services
-builder.Services.AddHostedService<SessionConsumerService>();
-builder.Services.AddHostedService<SaltRotationService>();
-builder.Services.AddHostedService<SessionCleanupService>();
+// Register services from MyTelegram.Services (includes IDataProcessor<ISessionMessage>)
+builder.Services.AddMyTelegramHandlerServices();
+
+// RabbitMQ options binding
+builder.Services.Configure<MyTelegram.EventBus.RabbitMQ.EventBusRabbitMqOptions>(builder.Configuration.GetRequiredSection("RabbitMQ:EventBus"));
+builder.Services.Configure<MyTelegram.EventBus.RabbitMQ.RabbitMqOptions>(builder.Configuration.GetRequiredSection("RabbitMQ:Connections:Default"));
+
+// 5. EventBus (RabbitMQ-backed, from MyTelegram.EventBus.RabbitMQ)
+builder.Services.AddMyTelegramRabbitMqEventBus();
+
+// 6. SessionServer services (new architecture, reconstructed from original binary)
+builder.Services.AddMyTelegramSessionServer(builder.Configuration);
 
 var host = builder.Build();
 
 try
 {
-    Log.Information("Starting MyTelegram.SessionServer...");
+    Log.Information("Starting MyTelegram.SessionServer (reconstructed architecture)...");
     await host.RunAsync();
 }
 catch (Exception ex)

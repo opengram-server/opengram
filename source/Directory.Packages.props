@@ -10,8 +10,9 @@
     <PackageVersion Include="ConfigureAwait.Fody" PrivateAssets="All" Version="3.3.2" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Cube.Timer" Version="1.0.5" />
-    <PackageVersion Include="EventFlow" Version="1.2.1" />
-    <PackageVersion Include="EventFlow.MongoDB" Version="1.2.1" />
+    <PackageVersion Include="EventFlow" Version="1.2.3" />
+    <PackageVersion Include="EventFlow.MongoDB" Version="1.2.3" />
+    
     <PackageVersion Include="Fody" Version="6.9.2" />
     <PackageVersion Include="Google.Protobuf" Version="3.31.1" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.66.0" />
@@ -42,6 +43,7 @@
     <PackageVersion Include="Rebus.MsgPack" Version="7.0.0" />
     <PackageVersion Include="Rebus.RabbitMq" Version="10.0.1" />
     <PackageVersion Include="Rebus.ServiceProvider" Version="10.3.0" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.8.41" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Serilog.Settings.Configuration" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />

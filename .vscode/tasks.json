@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run server",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "compose",
+                "up",
+                "--build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/docker/compose"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

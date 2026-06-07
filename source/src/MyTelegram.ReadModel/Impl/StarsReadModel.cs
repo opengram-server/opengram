@@ -1,8 +1,11 @@
 namespace MyTelegram.ReadModel.Impl;
 
 using MongoDB.Bson.Serialization.Attributes;
+using EventFlow.ReadStores;
+using EventFlow.MongoDB.ReadStores;
+using MyTelegram.ReadModel.Interfaces;
 
-public class StarsReadModel : IStarsReadModel,
+public class StarsReadModel : MyTelegram.ReadModel.Interfaces.IStarsReadModel,
     IAmReadModelFor<StarsAggregate, StarsId, StarsAccountCreatedEvent>,
     IAmReadModelFor<StarsAggregate, StarsId, StarsAddedEvent>,
     IAmReadModelFor<StarsAggregate, StarsId, StarsSpentEvent>,
@@ -15,6 +18,9 @@ public class StarsReadModel : IStarsReadModel,
     public virtual long? Version { get; set; }
     
     public virtual List<StarsTransaction> Transactions { get; private set; } = new();
+
+    // Implement IStarsReadModel.History
+    public List<StarsTransaction> History => Transactions;
 
     public Task ApplyAsync(IReadModelContext context,
         IDomainEvent<StarsAggregate, StarsId, StarsAccountCreatedEvent> domainEvent,
@@ -39,10 +45,10 @@ public class StarsReadModel : IStarsReadModel,
         Transactions.Add(new StarsTransaction
         {
             Id = domainEvent.AggregateEvent.TransactionId,
+            TransactionId = domainEvent.AggregateEvent.TransactionId,
             Amount = domainEvent.AggregateEvent.Amount,
-            Type = StarsTransactionType.TopUp,
             Reason = domainEvent.AggregateEvent.Reason,
-            Date = domainEvent.Timestamp.DateTime
+            Date = (int)new DateTimeOffset(domainEvent.Timestamp.DateTime).ToUnixTimeSeconds()
         });
         
         return Task.CompletedTask;
@@ -59,10 +65,10 @@ public class StarsReadModel : IStarsReadModel,
         Transactions.Add(new StarsTransaction
         {
             Id = domainEvent.AggregateEvent.TransactionId,
-            Amount = -domainEvent.AggregateEvent.Amount, // отрицательное значение при списании
-            Type = StarsTransactionType.Purchase,
+            TransactionId = domainEvent.AggregateEvent.TransactionId,
+            Amount = -domainEvent.AggregateEvent.Amount,
             Reason = domainEvent.AggregateEvent.Reason,
-            Date = domainEvent.Timestamp.DateTime
+            Date = (int)new DateTimeOffset(domainEvent.Timestamp.DateTime).ToUnixTimeSeconds()
         });
         Console.WriteLine($"[StarsReadModel] StarsSpentEvent applied. New balance: {Balance}, Transaction added to history");
         
@@ -79,10 +85,10 @@ public class StarsReadModel : IStarsReadModel,
         Transactions.Add(new StarsTransaction
         {
             Id = domainEvent.AggregateEvent.RefundTransactionId,
+            TransactionId = domainEvent.AggregateEvent.RefundTransactionId,
             Amount = domainEvent.AggregateEvent.Amount,
-            Type = StarsTransactionType.Refund,
             Reason = $"Refund for {domainEvent.AggregateEvent.OriginalTransactionId}",
-            Date = domainEvent.Timestamp.DateTime
+            Date = (int)new DateTimeOffset(domainEvent.Timestamp.DateTime).ToUnixTimeSeconds()
         });
         
         return Task.CompletedTask;

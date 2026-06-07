@@ -12,6 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EventFlow" />
+    <PackageReference Include="EventFlow.MongoDB" />
     <RdXmlFile Include="rd.xml" />
   </ItemGroup>
 

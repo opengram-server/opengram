@@ -1,20 +1,42 @@
-// ReSharper disable All
-
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Bots;
 
 ///<summary>
-/// Gets the menu button action for a given user or for all users, previously set using <a href="https://corefork.telegram.org/method/bots.setBotMenuButton">bots.setBotMenuButton</a>; users can see this information in the <a href="https://corefork.telegram.org/constructor/botInfo">botInfo</a> constructor.
-/// <para>Possible errors</para>
-/// Code Type Description
-/// 400 USER_BOT_REQUIRED This method can only be called by a bot.
+/// Gets the menu button action for a given user or for all users; only available for bots.
 /// See <a href="https://corefork.telegram.org/method/bots.getBotMenuButton" />
 ///</summary>
-internal sealed class GetBotMenuButtonHandler : RpcResultObjectHandler<MyTelegram.Schema.Bots.RequestGetBotMenuButton, MyTelegram.Schema.IBotMenuButton>,
+internal sealed class GetBotMenuButtonHandler(
+    IQueryProcessor queryProcessor)
+    : RpcResultObjectHandler<MyTelegram.Schema.Bots.RequestGetBotMenuButton, MyTelegram.Schema.IBotMenuButton>,
     Bots.IGetBotMenuButtonHandler
 {
-    protected override Task<MyTelegram.Schema.IBotMenuButton> HandleCoreAsync(IRequestInput input,
+    protected override async Task<IBotMenuButton> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Bots.RequestGetBotMenuButton obj)
     {
-        throw new NotImplementedException();
+        var botReadModel = await queryProcessor.ProcessAsync(
+            new GetBotByUserIdQuery(input.UserId),
+            CancellationToken.None);
+
+        if (botReadModel == null)
+        {
+            return new TBotMenuButtonDefault();
+        }
+
+        // If the bot has a mini app URL configured, return a web app button
+        if (!string.IsNullOrEmpty(botReadModel.MiniAppUrl))
+        {
+            return new TBotMenuButton
+            {
+                Text = "Menu",
+                Url = botReadModel.MiniAppUrl
+            };
+        }
+
+        // If the bot has commands, return commands button
+        if (botReadModel.Commands.Count > 0)
+        {
+            return new TBotMenuButtonCommands();
+        }
+
+        return new TBotMenuButtonDefault();
     }
 }

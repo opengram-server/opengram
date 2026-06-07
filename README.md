@@ -3,7 +3,8 @@
 *Читать на других языках: [English](README.en.md)*
 
 Opengram — это самостоятельный сервер Telegram, написанный на C# (.NET 9). Проект является форком [mytelegram](https://github.com/loyldg/mytelegram) и реализует серверную часть API Telegram (MTProto), которую можно развернуть на собственной инфраструктуре.
-Наш телеграм канал: https://t.me/opengrame
+
+[Telegram-канал](https://t.me/opengrame)
 
 ## Возможности
 
@@ -22,19 +23,19 @@ Opengram — это самостоятельный сервер Telegram, нап
 
 Сервер состоит из набора микросервисов, которые запускаются через Docker Compose:
 
-| Сервис | Назначение |
-| --- | --- |
-| `gateway-server` | Точка входа для MTProto-подключений клиентов |
-| `auth-server` | Авторизация и обмен ключами |
-| `session-server` | Хранение сессий и маршрутизация обновлений |
-| `messenger-command-server` | Обработка команд (запись, CQRS) |
-| `messenger-query-server` | Обработка запросов (чтение, CQRS) |
-| `bot-api-server` | HTTP Bot API |
-| `admin-api` | Служебный API администрирования |
-| `file-server` / `file-merge-proxy` | Хранение и раздача файлов |
-| `turn-server` | TURN/STUN для звонков |
-| `sms-sender` | Отправка кодов подтверждения |
-| `data-seeder` | Первичное наполнение базы данных |
+| Сервис                             | Назначение                                                          |
+|------------------------------------|---------------------------------------------------------------------|
+| `gateway-server`                   | Точка входа для MTProto-подключений клиентов                        |
+| `auth-server`                      | Авторизация и обмен ключами                                         |
+| `session-server`                   | Хранение сессий и маршрутизация обновлений                          |
+| `messenger-command-server`         | Обработка команд (запись, CQRS)                                     |
+| `messenger-query-server`           | Обработка запросов (чтение, CQRS)                                   |
+| `bot-api-server`                   | HTTP Bot API                                                        |
+| `admin-api`                        | Служебный API администрирования                                     |
+| `file-server`, `file-merge-proxy`  | Хранение и раздача файлов. К сожалению, код `file-server` закрытый. |
+| `turn-server`                      | TURN/STUN для звонков                                               |
+| `sms-sender`                       | Отправка кодов подтверждения                                        |
+| `data-seeder`                      | Первичное наполнение базы данных                                    |
 
 Инфраструктура: MongoDB (хранилище и event store), Redis (кеш), RabbitMQ (шина событий), MinIO (объектное хранилище файлов).
 
@@ -58,22 +59,34 @@ Opengram — это самостоятельный сервер Telegram, нап
    (пароли MongoDB, Redis, RabbitMQ, MinIO, ключ Admin API), а также укажите внешний
    IP-адрес сервера в параметрах `App__WebRtcConnections` и `App__DcOptions`.
 
-3. Сгенерируйте RSA-ключи MTProto и положите их в `docker/compose/secrets/mtproto/`
-   (см. `secrets/mtproto/README.md`).
-
-4. Запустите сервисы:
+3. Сгенерируйте RSA-ключи MTProto командами:
 
    ```bash
-   docker compose up -d
+   cd docker/compose/secrets/mtproto
+
+   # Приватный ключ (PKCS#8)
+   openssl genrsa -out rsa_private.pem 2048
+
+   # Приватный ключ в формате PKCS#1 (используется сервером)
+   openssl rsa -in rsa_private.pem -traditional -out rsa_private_pkcs1.pem
+
+   # Публичный ключ
+   openssl rsa -in rsa_private.pem -pubout -out rsa_public.pem
    ```
 
-   Часть сервисов (в том числе `messenger-query-server`) собирается локально из исходников,
-   а не скачивается из реестра, поэтому `docker login` не требуется. При первом запуске
-   образы соберутся автоматически. Чтобы пересобрать их вручную:
+   Приватные ключи намеренно не хранятся в
+   репозитории — сгенерируйте свою пару перед запуском.
+
+4. Сгенерируйте самоподписанный SSL-сертификат:
 
    ```bash
-   docker compose build
-   docker compose up -d
+   openssl req -new -x509 -key rsa_private.pem -out rsa_certificate.pem -days 3650 -subj '/CN=telegram.server'
+   ```
+
+5. Запустите сервисы:
+
+   ```bash
+   docker compose up --build
    ```
 
 После старта подключите клиент Telegram, прописав адрес вашего дата-центра.
@@ -102,3 +115,7 @@ dotnet build MyTelegram.sln -c Release
 Проект основан на [mytelegram](https://github.com/loyldg/mytelegram). Все права на
 оригинальный код принадлежат его авторам; уважайте условия лицензии исходного проекта
 и товарные знаки Telegram.
+
+## Нюансы
+
+К сожалению, код микросервиса `file-server` закрытый. Я не знаю что внутри, там может быть бэкдор или все что угодно. В целях безопасности я отключил этому микросервису доступ к интернету. Это решение автора MyTelegram, мы не виноваты.

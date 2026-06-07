@@ -370,3 +370,5 @@ MigrationBackup/
 # Загружаемые в рантайме медиа админ-панели
 stargift-admin/backend/uploads/*
 !stargift-admin/backend/uploads/.gitkeep
+
+data
