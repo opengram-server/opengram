@@ -1,27 +1,29 @@
 version: "3.9"
 
 networks:
-  tg-net:
+  main:
     driver: bridge
+  file-server:
+    driver: bridge
+    internal: true  # Prevent external internet access
 
 services:
-  ### Redis
   redis:
     image: redis:alpine
     restart: always
     networks:
-      - tg-net
+      - main
     #ports:
     #- "6379:6379"
     volumes:
       - ./data/redis:/data
 
-  ### RabbitMq
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: always
     networks:
-      - tg-net
+      - main
+      - file-server
     #ports:
     #  - "5672:5672"
     #  - "15672:15672"
@@ -33,12 +35,12 @@ services:
       RABBITMQ_DEFAULT_USER: test
       RABBITMQ_DEFAULT_PASS: test
 
-  ### MongoDb
   mongodb:
     image: mongo:latest
     restart: always
     networks:
-      - tg-net
+      - main
+      - file-server
     ports:
       - "27017:27017"
     volumes:
@@ -49,12 +51,12 @@ services:
     #  MONGO_INITDB_ROOT_USERNAME: admin
     #  MONGO_INITDB_ROOT_PASSWORD: admin
 
-  ### Minio
   minio:
     image: minio/minio:latest
     restart: always
     networks:
-      - tg-net
+      - main
+      - file-server
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -67,16 +69,15 @@ services:
     command: server /data  --console-address ":9001"
     #privileged: true
 
-  ################### MyTelegram server
+  # --- FromGram server ---
 
-### Data seeder
   data-seeder:
     build:
       context: ../../source
       dockerfile: src/MyTelegram.DataSeeder/Dockerfile
     restart: always
     networks:
-      - tg-net
+      - main
     environment:
       Serilog__MinimumLevel__Default: ${Serilog__MinimumLevel__Default}
       ConnectionStrings__Default: ${ConnectionStrings__Default}
@@ -95,14 +96,13 @@ services:
     depends_on:
       - mongodb
 
-  ### Admin API
   admin-api:
     build:
       context: ../../source
       dockerfile: src/MyTelegram.Admin.Api/Dockerfile
     restart: always
     networks:
-      - tg-net
+      - main
     ports:
       - "5555:5000"
     environment:
@@ -122,7 +122,6 @@ services:
       - mongodb
       - rabbitmq
 
-  ### 1.Gateway server
   gateway-server:
     build:
       context: ../../source
@@ -131,7 +130,7 @@ services:
         BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
     restart: always
     networks:
-      - tg-net
+      - main
     ports:
       - "${App__Servers__0__Port}:${App__Servers__0__Port}"
       - "${App__Servers__1__Port}:${App__Servers__1__Port}"
@@ -222,23 +221,6 @@ services:
       - mongodb
       - redis
 
-  # ### 2.Seq server
-  # seq-server:
-  # image: mytelegram/mytelegram-seq-server:${MyTelegramVersion}
-  # restart: always
-  # networks:
-  # - tg-net
-  # #ports:
-  # #  - "10001:80"
-  # environment:
-  # ConnectionStrings__Default: ${DefaultConnectionStrings}
-  # Serilog__MinimumLevel__Default: ${DefaultLogLevel}
-  # volumes:
-  # - ./data/mytelegram/seq/logs:/data/Logs
-  # depends_on:
-  # - mongodb
-
-  ### 2.Auth server
   auth-server:
     build:
       context: ../../source
@@ -247,7 +229,7 @@ services:
         BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
     restart: always
     networks:
-      - tg-net
+      - main
     environment:
       Serilog__MinimumLevel__Default: ${Serilog__MinimumLevel__Default}
       App__PrivateKeyFilePath: /app/secrets/mtproto/rsa_private.pem
@@ -268,10 +250,12 @@ services:
 
   ### 3.Session server
   session-server:
-    image: ${MyTelegramRegistry}/mytelegram-session-server:${MyTelegramVersion}
+    build:
+      context: ../../source
+      dockerfile: src/MyTelegram.SessionServer/Dockerfile
     restart: always
     networks:
-      - tg-net
+      - main
     environment:
       Serilog__MinimumLevel__Default: ${Serilog__MinimumLevel__Default}
       ConnectionStrings__Default: ${ConnectionStrings__Default}
@@ -299,29 +283,13 @@ services:
       - rabbitmq
       - redis
 
-  # ### 5.Messenger grpc server
-  # messenger-grpc-service:
-  #   image: mytelegram/mytelegram-messenger-grpc-service:${MyTelegramVersion}
-  #   restart: always
-  #   networks:
-  #     - tg-net
-  #   environment:
-  #     Serilog__MinimumLevel__Default: ${Serilog__MinimumLevel__Default}
-  #     ConnectionStrings__Default: ${ConnectionStrings__Default}
-  #     App__DatabaseName: tg
-  #     App__ReadModelDatabaseName: tg
-  #   volumes:
-  #     - ./data/mytelegram/messenger-grpc-service/logs:/app/Logs
-  #   depends_on:
-  #     - mongodb
-
-  ### 4.File server (original - for Telegram)
   file-server:
     image: ${MyTelegramRegistry}/mytelegram-file-server:${MyTelegramVersion}
     restart: always
     user: "0:0"  # Run as root to avoid permission issues
     networks:
-      - tg-net
+      - main
+      - file-server
     volumes:
       - ./data/mytelegram/file/uploads:/app/uploads
       - ./data/mytelegram/file:/app/Logs
@@ -343,14 +311,14 @@ services:
       - mongodb
       - rabbitmq
 
-  ### 4.5 File merge proxy (HTTP API for merging file parts from local filesystem)
   file-merge-proxy:
     build:
       context: ../../file-merge-proxy
       dockerfile: Dockerfile
     restart: always
     networks:
-      - tg-net
+      - main
+      - file-server
     volumes:
       - ./data/mytelegram/file/uploads:/app/uploads
     environment:
@@ -359,14 +327,14 @@ services:
     ports:
       - "5000:5000"
 
-  ### 5.Messenger command server
   messenger-command-server:
     build:
       context: ../../source
       dockerfile: src/MyTelegram.Messenger.CommandServer/Dockerfile
     restart: always
     networks:
-      - tg-net
+      - main
+      - file-server
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -455,16 +423,14 @@ services:
       - rabbitmq
       - redis
 
-  ### 6.Messenger query server
   messenger-query-server:
-    # CHANGED: Build locally from source instead of using remote image
     build:
       context: ../../source
       dockerfile: src/MyTelegram.Messenger.QueryServer/Dockerfile
-    #image: mytelegram-messenger-query-server-local:latest
     restart: always
     networks:
-      - tg-net
+      - main
+      - file-server
     environment:
       Serilog__MinimumLevel__Default: ${Serilog__MinimumLevel__Default}
       ConnectionStrings__Default: ${ConnectionStrings__Default}
@@ -560,7 +526,7 @@ services:
       dockerfile: src/MyTelegram.BotApi/Dockerfile
     restart: always
     networks:
-      - tg-net
+      - main
     ports:
       - "8081:8081"
     environment:
@@ -592,13 +558,6 @@ services:
     image: coturn/coturn:latest
     restart: always
     network_mode: host
-    # networks:
-    #   - tg-net
-    # ports:
-    #   - "3478:3478/udp"
-    #   - "3478:3478/tcp"
-    #   - "5349:5349/tcp"
-    # Note: network_mode: host exposes all ports directly, including relay ports 49152-65535
     volumes:
       - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
       - ./data/coturn/logs:/var/log/coturn
@@ -608,7 +567,9 @@ services:
 
   ### 9.Sms sender
   sms-sender:
-    image: ${MyTelegramRegistry}/mytelegram-sms-sender:${MyTelegramVersion}
+    build:
+      context: ../../source
+      dockerfile: src/MyTelegram.SmsSender/Dockerfile
     restart: always
     networks:
       - tg-net
@@ -634,7 +595,7 @@ services:
     depends_on:
       - rabbitmq
 
-  ### 10.Fragment Backend API (Run locally with npm run dev)
+  ### Fragment Backend API (Run locally with npm run dev)
   # fragment-backend:
   #   build:
   #     context: ../../fragment/fragment-backend
