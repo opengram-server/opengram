@@ -3,7 +3,6 @@ using MongoDB.Driver;
 using MyTelegram.Domain.Shared.BotApi;
 using MyTelegram.Domain.Shared.Events;
 using MyTelegram.ReadModel.Impl;
-using MyTelegram.ReadModel.MongoDB;
 using MyTelegram.Schema;
 using MyTelegram.EventBus;
 using System.Text.Json;

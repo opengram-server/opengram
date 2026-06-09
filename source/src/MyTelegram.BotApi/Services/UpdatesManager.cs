@@ -14,6 +14,16 @@ public class UpdatesManager(
     private readonly ConcurrentDictionary<long, long> _lastUpdateIds = new();
     private readonly ConcurrentDictionary<string, object> _invoices = new();
     private readonly ConcurrentDictionary<string, (bool ok, string? error)> _preCheckoutAnswers = new();
+    private readonly ConcurrentDictionary<string, WebhookConfig> _webhooks = new();
+
+    private class WebhookConfig
+    {
+        public string Url { get; set; } = string.Empty;
+        public string? SecretToken { get; set; }
+        public int? MaxConnections { get; set; }
+        public List<string>? AllowedUpdates { get; set; }
+        public DateTime SetAt { get; set; }
+    }
 
     public async Task<List<BotApiUpdate>> GetUpdatesAsync(string token, int offset, int limit, int timeout, List<string>? allowedUpdates)
     {
@@ -141,5 +151,48 @@ public class UpdatesManager(
         _preCheckoutAnswers[preCheckoutQueryId] = (ok, errorMessage);
         logger.LogInformation("Pre-checkout answer stored for query {QueryId}: ok={Ok}", preCheckoutQueryId, ok);
         return Task.CompletedTask;
+    }
+
+    public Task SetWebhookAsync(string token, string url, string? secretToken, int? maxConnections, List<string>? allowedUpdates)
+    {
+        _webhooks[token] = new WebhookConfig
+        {
+            Url = url,
+            SecretToken = secretToken,
+            MaxConnections = maxConnections,
+            AllowedUpdates = allowedUpdates,
+            SetAt = DateTime.UtcNow
+        };
+        logger.LogInformation("Webhook set for token {Token}: {Url}", token[..8] + "...", url);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteWebhookAsync(string token)
+    {
+        _webhooks.TryRemove(token, out _);
+        logger.LogInformation("Webhook deleted for token {Token}", token[..8] + "...");
+        return Task.CompletedTask;
+    }
+
+    public Task<WebhookInfo?> GetWebhookInfoAsync(string token)
+    {
+        if (_webhooks.TryGetValue(token, out var config))
+        {
+            return Task.FromResult<WebhookInfo?>(new WebhookInfo
+            {
+                Url = config.Url,
+                HasCustomCertificate = false,
+                PendingUpdateCount = 0,
+                MaxConnections = config.MaxConnections,
+                AllowedUpdates = config.AllowedUpdates
+            });
+        }
+
+        return Task.FromResult<WebhookInfo?>(new WebhookInfo
+        {
+            Url = string.Empty,
+            HasCustomCertificate = false,
+            PendingUpdateCount = 0
+        });
     }
 }
