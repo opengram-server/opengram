@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Snowflake, Upload, Save, Info, CheckCircle2, AlertTriangle, Cloud, FileCode, Server } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function FrozenSettings() {
   const [settings, setSettings] = useState(null);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Shield, Upload, CheckCircle, XCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function Verification() {
   const [activeTab, setActiveTab] = useState('assign'); // assign or manage
