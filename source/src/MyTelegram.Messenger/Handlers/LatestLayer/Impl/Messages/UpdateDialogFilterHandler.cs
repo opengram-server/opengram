@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
 /// Update <a href="https://corefork.telegram.org/api/folders">folder</a>
@@ -54,7 +54,7 @@ internal sealed class UpdateDialogFilterHandler(
             }
             else
             {
-                throw new NotImplementedException();
+                throw new RpcException(new RpcError(400, "FILTER_NOT_SUPPORTED"));
             }
         }
 

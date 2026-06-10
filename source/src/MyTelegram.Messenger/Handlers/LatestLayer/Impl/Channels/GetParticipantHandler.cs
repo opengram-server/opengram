@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Get info about a <a href="https://corefork.telegram.org/api/channel">channel/supergroup</a> participant
@@ -58,6 +58,6 @@ internal sealed class GetParticipantHandler(
             return r;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

@@ -15,6 +15,8 @@ public class SerializerFactory
     private static readonly BitArraySerializer BitArraySerializer = new();
     private static readonly Int128Serializer Int128Serializer = new();
     private static readonly Int256Serializer Int256Serializer = new();
+    private const string ReadOnlyMemoryTypeName = "ReadOnlyMemory`1";
+    private static readonly ReadOnlyMemorySerializer ReadOnlyMemorySerializer = new();
 
     public static ISerializer<byte[]> CreateInt128Serializer()
     {
@@ -58,6 +60,8 @@ public class SerializerFactory
                 return (ISerializer<T>)StringSerializer;
             case ByteArrayTypeName:
                 return (ISerializer<T>)BytesSerializer;
+            case ReadOnlyMemoryTypeName:
+                return (ISerializer<T>)ReadOnlyMemorySerializer;
         }
 
         if (typeof(IObject).IsAssignableFrom(type)) return new ObjectSerializer<T>();

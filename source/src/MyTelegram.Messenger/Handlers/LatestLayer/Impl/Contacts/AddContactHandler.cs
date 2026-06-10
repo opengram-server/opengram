@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Contacts;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Contacts;
 
 ///<summary>
 /// Add an existing telegram user as contact.Use <a href="https://corefork.telegram.org/method/contacts.importContacts">contacts.importContacts</a> to add contacts by phone number, without knowing their Telegram ID.
@@ -37,6 +37,6 @@ internal sealed class AddContactHandler(
             return null!;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
     }
 }

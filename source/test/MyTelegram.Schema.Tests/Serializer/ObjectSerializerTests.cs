@@ -83,7 +83,7 @@ public class ObjectSerializerTests
     {
         _outputHelper = outputHelper;
         // Only need this code when tl object and serializer in different assembly
-        //SerializerObjectMappings.CreateConstructIdToTypeMappingsFromAssembly(Assembly.GetExecutingAssembly());
+        SerializerObjectMappings.CreateConstructIdToTypeMappingsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
     //    [Fact]

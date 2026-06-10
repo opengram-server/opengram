@@ -1,22 +1,66 @@
 // ReSharper disable All
 
+using MyTelegram.Domain.Aggregates.EncryptedChat;
+using MyTelegram.Domain.Commands.EncryptedChat;
+
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
 /// Sends a request to start a secret chat to the user.
-/// <para>Possible errors</para>
-/// Code Type Description
-/// 400 DH_G_A_INVALID g_a invalid.
-/// 400 INPUT_USER_DEACTIVATED The specified user was deleted.
-/// 400 USER_ID_INVALID The provided user ID is invalid.
 /// See <a href="https://corefork.telegram.org/method/messages.requestEncryption" />
 ///</summary>
-internal sealed class RequestEncryptionHandler : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestRequestEncryption, MyTelegram.Schema.IEncryptedChat>,
+internal sealed class RequestEncryptionHandler(
+    ICommandBus commandBus,
+    IAccessHashHelper accessHashHelper,
+    IPeerHelper peerHelper)
+    : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestRequestEncryption, MyTelegram.Schema.IEncryptedChat>,
     Messages.IRequestEncryptionHandler
 {
-    protected override Task<MyTelegram.Schema.IEncryptedChat> HandleCoreAsync(IRequestInput input,
+    protected override async Task<MyTelegram.Schema.IEncryptedChat> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Messages.RequestRequestEncryption obj)
     {
-        throw new NotImplementedException();
+        // Validate target user
+        await accessHashHelper.CheckAccessHashAsync(input, obj.UserId);
+        var toPeer = peerHelper.GetPeer(obj.UserId, input.UserId);
+        var toUserId = toPeer.PeerId;
+
+        if (toUserId == input.UserId)
+        {
+            RpcErrors.RpcErrors400.UserIdInvalid.ThrowRpcError();
+        }
+
+        // Validate g_a
+        if (obj.GA == null || obj.GA.Length == 0)
+        {
+            RpcErrors.RpcErrors400.DhGAInvalid.ThrowRpcError();
+        }
+
+        // Use RandomId from client as chatId (per Telegram protocol)
+        var chatId = obj.RandomId;
+        var accessHash = Random.Shared.NextInt64();
+        var date = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var command = new RequestEncryptionCommand(
+            EncryptedChatId.Create(chatId),
+            input.ToRequestInfo(),
+            chatId,
+            accessHash,
+            input.UserId,
+            toUserId,
+            input.PermAuthKeyId,
+            obj.GA,
+            date);
+
+        await commandBus.PublishAsync(command, default);
+
+        // Return encryptedChatWaiting to the initiator
+        return new TEncryptedChatWaiting
+        {
+            Id = chatId,
+            AccessHash = accessHash,
+            Date = date,
+            AdminId = input.UserId,
+            ParticipantId = toUserId
+        };
     }
 }

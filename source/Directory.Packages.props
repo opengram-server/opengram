@@ -42,6 +42,7 @@
     <PackageVersion Include="Rebus.MsgPack" Version="7.0.0" />
     <PackageVersion Include="Rebus.RabbitMq" Version="10.0.1" />
     <PackageVersion Include="Rebus.ServiceProvider" Version="10.3.0" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.8.41" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Serilog.Settings.Configuration" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />

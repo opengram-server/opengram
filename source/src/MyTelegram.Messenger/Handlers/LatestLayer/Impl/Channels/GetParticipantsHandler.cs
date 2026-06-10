@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Get the participants of a <a href="https://corefork.telegram.org/api/channel">supergroup/channel</a>
@@ -170,6 +170,6 @@ internal sealed class GetParticipantsHandler(
                 channelMemberReadModels, users, input.DeviceType, forceNotLeft, input.Layer);
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

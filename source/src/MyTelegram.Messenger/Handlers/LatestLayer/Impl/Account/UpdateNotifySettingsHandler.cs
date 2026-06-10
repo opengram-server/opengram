@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Account;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Account;
 
 ///<summary>
 /// Edits notification settings from a given user/group, from all users/all groups.
@@ -39,6 +39,6 @@ internal sealed class UpdateNotifySettingsHandler(
             return null!;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
     }
 }

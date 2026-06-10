@@ -44,6 +44,18 @@ builder.Services.AddMyTelegramRabbitMqEventBus();
 // лишние обработчики EventFlow
 builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotMessageEvent>, MyTelegram.BotApi.Serializers.BotMessageEventSerializer>();
 builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotGiftEvent>, MyTelegram.BotApi.Serializers.BotGiftEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotForwardMessageEvent>, MyTelegram.BotApi.Serializers.BotForwardMessageEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotEditMessageEvent>, MyTelegram.BotApi.Serializers.BotEditMessageEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotDeleteMessageEvent>, MyTelegram.BotApi.Serializers.BotDeleteMessageEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatActionEvent>, MyTelegram.BotApi.Serializers.BotChatActionEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotCallbackQueryAnswerEvent>, MyTelegram.BotApi.Serializers.BotCallbackQueryAnswerEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatMemberEvent>, MyTelegram.BotApi.Serializers.BotChatMemberEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatPermissionsEvent>, MyTelegram.BotApi.Serializers.BotChatPermissionsEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatInviteLinkEvent>, MyTelegram.BotApi.Serializers.BotChatInviteLinkEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatJoinRequestEvent>, MyTelegram.BotApi.Serializers.BotChatJoinRequestEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatPhotoEvent>, MyTelegram.BotApi.Serializers.BotChatPhotoEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotChatInfoEvent>, MyTelegram.BotApi.Serializers.BotChatInfoEventSerializer>();
+builder.Services.AddTransient<MyTelegram.Abstractions.IEventDataSerializer<MyTelegram.Domain.Shared.Events.BotSendMediaEvent>, MyTelegram.BotApi.Serializers.BotSendMediaEventSerializer>();
 
 // MongoDB нужен только для BotMessagePollerService и используется на чтение
 builder.Services.AddSingleton<MongoDB.Driver.IMongoDatabase>(sp =>
@@ -53,6 +65,10 @@ builder.Services.AddSingleton<MongoDB.Driver.IMongoDatabase>(sp =>
     var client = new MongoDB.Driver.MongoClient(connectionString);
     return client.GetDatabase(databaseName);
 });
+
+// MinIO file storage configuration
+builder.Services.Configure<MyTelegram.BotApi.Options.MinioOptions>(
+    builder.Configuration.GetSection("MinIO"));
 
 // Bot API намеренно не использует EventFlow/ICommandBus, чтобы не вмешиваться
 // в трафик MTProto. Команды уходят в Command Server событиями через RabbitMQ.

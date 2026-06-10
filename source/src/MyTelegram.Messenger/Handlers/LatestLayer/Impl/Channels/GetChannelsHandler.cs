@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Get info about <a href="https://corefork.telegram.org/api/channel">channels/supergroups</a>
@@ -45,6 +45,6 @@ internal sealed class GetChannelsHandler(
 
         RpcErrors.RpcErrors400.ChannelInvalid.ThrowRpcError();
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

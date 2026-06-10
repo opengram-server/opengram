@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Delete all messages sent by a specific participant of a given supergroup
@@ -63,6 +63,6 @@ internal sealed class DeleteParticipantHistoryHandler(
             };
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

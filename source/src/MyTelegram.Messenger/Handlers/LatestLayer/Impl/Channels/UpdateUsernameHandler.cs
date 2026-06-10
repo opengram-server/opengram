@@ -1,4 +1,4 @@
-using EventFlow.Queries;
+﻿using EventFlow.Queries;
 
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
@@ -59,6 +59,6 @@ internal sealed class UpdateUsernameHandler(
             return new TBoolTrue();
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

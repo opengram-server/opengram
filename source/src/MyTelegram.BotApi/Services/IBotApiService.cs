@@ -57,6 +57,7 @@ public interface IBotApiService
     Task DeleteChatPhotoAsync(string token, JsonElement body);
     Task SetChatTitleAsync(string token, JsonElement body);
     Task SetChatDescriptionAsync(string token, JsonElement body);
+    Task<BotApiChat> GetChatAsync(string token, JsonElement body);
     
     // Оплата звёздами (Stars)
     Task<BotApiMessage> SendInvoiceAsync(string token, JsonElement body);

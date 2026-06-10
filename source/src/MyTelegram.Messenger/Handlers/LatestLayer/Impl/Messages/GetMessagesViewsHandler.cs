@@ -1,4 +1,4 @@
-// ReSharper disable All
+﻿// ReSharper disable All
 
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
@@ -94,6 +94,5 @@ internal sealed class GetMessagesViewsHandler : RpcResultObjectHandler<MyTelegra
                 };
             }))
         };
-        throw new NotImplementedException();
     }
 }

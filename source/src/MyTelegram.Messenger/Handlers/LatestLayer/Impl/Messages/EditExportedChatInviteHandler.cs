@@ -1,4 +1,4 @@
-// ReSharper disable All
+﻿// ReSharper disable All
 
 using IExportedChatInvite = MyTelegram.Schema.Messages.IExportedChatInvite;
 
@@ -92,6 +92,6 @@ internal sealed class EditExportedChatInviteHandler(
                 throw new ArgumentOutOfRangeException();
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
     }
 }

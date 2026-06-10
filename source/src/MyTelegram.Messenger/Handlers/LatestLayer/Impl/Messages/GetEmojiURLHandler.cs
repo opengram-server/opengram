@@ -1,15 +1,22 @@
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
-/// Returns an HTTP URL which can be used to automatically log in into translation platform and suggest new <a href="https://corefork.telegram.org/api/custom-emoji#emoji-keywords">emoji keywords »</a>. The URL will be valid for 30 seconds after generation.
+/// Returns an HTTP URL which can be used to automatically log in and get the emoji keywords.
 /// See <a href="https://corefork.telegram.org/method/messages.getEmojiURL" />
 ///</summary>
-internal sealed class GetEmojiURLHandler : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestGetEmojiURL, MyTelegram.Schema.IEmojiURL>,
+internal sealed class GetEmojiURLHandler
+    : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestGetEmojiURL, MyTelegram.Schema.IEmojiURL>,
     Messages.IGetEmojiURLHandler
 {
-    protected override Task<MyTelegram.Schema.IEmojiURL> HandleCoreAsync(IRequestInput input,
+    protected override Task<IEmojiURL> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Messages.RequestGetEmojiURL obj)
     {
-        throw new NotImplementedException();
+        // Return an emoji keywords URL. On self-hosted, point to the standard endpoint.
+        var langCode = obj.LangCode ?? "en";
+
+        return Task.FromResult<IEmojiURL>(new TEmojiURL
+        {
+            Url = $"https://emojik.ru/klyuchevye-slova/{langCode}/"
+        });
     }
 }

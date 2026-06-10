@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Leave a <a href="https://corefork.telegram.org/api/channel">channel/supergroup</a>
@@ -36,6 +36,6 @@ internal sealed class LeaveChannelHandler(
 
             return null!;
         }
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

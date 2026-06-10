@@ -1,4 +1,4 @@
-// ReSharper disable All
+﻿// ReSharper disable All
 
 namespace MyTelegram.Handlers;
 
@@ -24,6 +24,6 @@ internal sealed class InvokeWithoutUpdatesHandler : BaseObjectHandler<MyTelegram
             return handler.HandleAsync(input, obj.Query)!;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
     }
 }

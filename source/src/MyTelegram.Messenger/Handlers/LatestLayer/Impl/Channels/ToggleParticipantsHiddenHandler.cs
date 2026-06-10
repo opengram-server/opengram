@@ -1,7 +1,7 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
-/// Hide or display the participants list in a <a href="https://corefork.telegram.org/api/channel">supergroup</a>.The supergroup must have at least <code>hidden_members_group_size_min</code> participants in order to use this method, as specified by the <a href="https://corefork.telegram.org/api/config#client-configuration">client configuration parameters �</a>.
+/// Hide or display the participants list in a <a href="https://corefork.telegram.org/api/channel">supergroup</a>.The supergroup must have at least <code>hidden_members_group_size_min</code> participants in order to use this method, as specified by the <a href="https://corefork.telegram.org/api/config#client-configuration">client configuration parameters »</a>.
 /// <para>Possible errors</para>
 /// Code Type Description
 /// 400 CHANNEL_INVALID The provided channel is invalid.
@@ -31,6 +31,6 @@ internal sealed class ToggleParticipantsHiddenHandler(ICommandBus commandBus,
             return null!;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

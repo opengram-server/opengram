@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Delete messages in a <a href="https://corefork.telegram.org/api/channel">channel/supergroup</a>
@@ -88,6 +88,6 @@ internal sealed class DeleteMessagesHandler(
             return new TAffectedMessages { Pts = pts, PtsCount = 0 };
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

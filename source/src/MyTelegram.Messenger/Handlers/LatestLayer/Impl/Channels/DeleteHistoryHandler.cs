@@ -1,4 +1,4 @@
-using RequestDeleteHistory = MyTelegram.Schema.Channels.RequestDeleteHistory;
+﻿using RequestDeleteHistory = MyTelegram.Schema.Channels.RequestDeleteHistory;
 
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
@@ -48,7 +48,7 @@ internal sealed class DeleteHistoryHandler(
             return null!;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 
     private async Task DeleteChannelHistoryForEveryoneAsync(long channelId, IRequestInput input)

@@ -1,4 +1,4 @@
-// ReSharper disable All
+﻿// ReSharper disable All
 
 using MyTelegram.Messenger.Services;
 using MyTelegram.Domain.Shared.Forums;
@@ -81,6 +81,6 @@ internal sealed class UpdatePaidMessagesPriceHandler(
             };
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

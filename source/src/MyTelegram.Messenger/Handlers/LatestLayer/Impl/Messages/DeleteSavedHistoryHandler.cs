@@ -1,18 +1,33 @@
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
-/// Deletes messages forwarded from a specific peer to <a href="https://corefork.telegram.org/api/saved-messages">saved messages »</a>.
-/// <para>Possible errors</para>
-/// Code Type Description
-/// 400 PEER_ID_INVALID The provided peer id is invalid.
+/// Deletes saved messages history for the specified peer.
 /// See <a href="https://corefork.telegram.org/method/messages.deleteSavedHistory" />
 ///</summary>
-internal sealed class DeleteSavedHistoryHandler : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestDeleteSavedHistory, MyTelegram.Schema.Messages.IAffectedHistory>,
-    Messages.IDeleteSavedHistoryHandler
+internal sealed class DeleteSavedHistoryHandler(
+    ICommandBus commandBus,
+    IPeerHelper peerHelper,
+    IAccessHashHelper accessHashHelper,
+    IRandomHelper randomHelper)
+    : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestDeleteSavedHistory, MyTelegram.Schema.Messages.IAffectedHistory>,
+        Messages.IDeleteSavedHistoryHandler
 {
-    protected override Task<MyTelegram.Schema.Messages.IAffectedHistory> HandleCoreAsync(IRequestInput input,
-        MyTelegram.Schema.Messages.RequestDeleteSavedHistory obj)
+    protected override async Task<IAffectedHistory> HandleCoreAsync(IRequestInput input,
+        RequestDeleteSavedHistory obj)
     {
-        throw new NotImplementedException();
+        await accessHashHelper.CheckAccessHashAsync(input, obj.Peer);
+        var peer = peerHelper.GetPeer(obj.Peer, input.UserId);
+
+        var command = new ClearHistoryCommand(
+            DialogId.Create(input.UserId, peer.PeerType, peer.PeerId),
+            input.ToRequestInfo(),
+            false,
+            string.Empty,
+            randomHelper.NextInt64(),
+            new List<int>(),
+            obj.MaxId);
+        await commandBus.PublishAsync(command);
+
+        return null!;
     }
 }

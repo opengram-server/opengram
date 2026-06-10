@@ -46,7 +46,7 @@ const BulkUploadReactions = () => {
     formData.append('premium', premium);
 
     try {
-      const response = await fetch('http://localhost:3001/api/reactions/bulk-upload', {
+      const response = await fetch('/api/reactions/bulk-upload', {
         method: 'POST',
         body: formData,
       });

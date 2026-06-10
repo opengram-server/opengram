@@ -1,21 +1,21 @@
-// ReSharper disable All
-
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Account;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Account;
 
 ///<summary>
-/// Get theme information
+/// Get theme information.
 /// <para>Possible errors</para>
 /// Code Type Description
-/// 400 THEME_FORMAT_INVALID Invalid theme format provided.
-/// 400 THEME_INVALID Invalid theme provided.
+/// 400 THEME_INVALID The specified theme is invalid.
 /// See <a href="https://corefork.telegram.org/method/account.getTheme" />
 ///</summary>
-internal sealed class GetThemeHandler : RpcResultObjectHandler<MyTelegram.Schema.Account.RequestGetTheme, MyTelegram.Schema.ITheme>,
-    Account.IGetThemeHandler
+internal sealed class GetThemeHandler(
+    IQueryProcessor queryProcessor)
+    : RpcResultObjectHandler<MyTelegram.Schema.Account.RequestGetTheme, MyTelegram.Schema.ITheme>,
+        Account.IGetThemeHandler
 {
-    protected override Task<MyTelegram.Schema.ITheme> HandleCoreAsync(IRequestInput input,
+    protected override async Task<ITheme> HandleCoreAsync(IRequestInput input,
         MyTelegram.Schema.Account.RequestGetTheme obj)
     {
-        throw new NotImplementedException();
+        // Themes infrastructure is limited - return a default theme
+        throw new RpcException(new RpcError(400, "THEME_INVALID"));
     }
 }

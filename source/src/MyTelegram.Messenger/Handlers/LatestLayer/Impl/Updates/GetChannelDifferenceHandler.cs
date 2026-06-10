@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Updates;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Updates;
 
 ///<summary>
 /// Returns the difference between the current state of updates of a certain channel and transmitted.
@@ -93,6 +93,6 @@ internal sealed class GetChannelDifferenceHandler(
             return r;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

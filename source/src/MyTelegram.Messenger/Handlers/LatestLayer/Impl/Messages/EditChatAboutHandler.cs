@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
 /// Edit the description of a <a href="https://corefork.telegram.org/api/channel">group/supergroup/channel</a>.
@@ -43,6 +43,6 @@ internal sealed class EditChatAboutHandler(
                 }
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
     }
 }

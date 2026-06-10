@@ -1,4 +1,4 @@
-// ReSharper disable All
+﻿// ReSharper disable All
 
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
@@ -46,6 +46,6 @@ internal sealed class AddChatUserHandler : RpcResultObjectHandler<MyTelegram.Sch
     protected override async Task<MyTelegram.Schema.Messages.IInvitedUsers> HandleCoreAsync(IRequestInput input,
         RequestAddChatUser obj)
     {
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
     }
 }

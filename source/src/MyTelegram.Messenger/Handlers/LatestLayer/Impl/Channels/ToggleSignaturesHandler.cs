@@ -1,4 +1,4 @@
-using MyTelegram.Messenger.Services.Impl;
+﻿using MyTelegram.Messenger.Services.Impl;
 
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
@@ -33,6 +33,6 @@ internal sealed class ToggleSignaturesHandler(ICommandBus commandBus,
             return null!;
         }
 
-        throw new NotImplementedException();
+        throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
     }
 }

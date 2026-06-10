@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Plus, Send, Edit, Trash2, Bell, AlertCircle, Info, FileText, CheckCircle2 } from 'lucide-react';
 import SendNotificationModal from '../components/SendNotificationModal';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function ServiceNotifications() {
   const [templates, setTemplates] = useState([]);

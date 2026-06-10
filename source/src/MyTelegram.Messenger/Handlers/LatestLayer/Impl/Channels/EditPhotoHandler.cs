@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Change the photo of a <a href="https://corefork.telegram.org/api/channel">channel/supergroup</a>
@@ -37,7 +37,7 @@ internal sealed class EditPhotoHandler(
         }
         else
         {
-            throw new NotImplementedException();
+            throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
         }
 
         long fileId = 0;

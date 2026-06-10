@@ -70,7 +70,8 @@ public class WebSocketMiddleware(
         var writeTask = WritePipeAsync(webSocket, pipe.Writer);
         var readTask = ReadPipeAsync(pipe.Reader, clientData);
         var processResponseQueueTask = ProcessResponseQueueAsync(clientData);
-        await Task.WhenAll(writeTask, readTask, processResponseQueueTask);
+        var processUnencryptedResponseQueueTask = ProcessUnencryptedResponseQueueAsync(clientData);
+        await Task.WhenAll(writeTask, readTask, processResponseQueueTask, processUnencryptedResponseQueueTask);
         clientManager.RemoveClient(clientData.ConnectionId);
         messageQueueProcessor.Enqueue(new ClientDisconnectedEvent(clientData.ConnectionId, clientData.AuthKeyId, 0),
             clientData.AuthKeyId);
@@ -95,6 +96,37 @@ public class WebSocketMiddleware(
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(encodedBytes);
+                }
+            }
+        }
+    }
+
+
+    private async Task ProcessUnencryptedResponseQueueAsync(ClientData clientData)
+    {
+        var queue = clientData.UnencryptedMessageResponseQueue;
+        while (await queue.Reader.WaitToReadAsync() && _isWebSocketConnected)
+        {
+            while (queue.Reader.TryRead(out var response))
+            {
+                try
+                {
+                    var encodedBytes =
+                        ArrayPool<byte>.Shared.Rent(clientDataSender.GetEncodedDataMaxLength(response.Data.Length));
+                    try
+                    {
+                        var totalCount = clientDataSender.EncodeData(response, clientData, encodedBytes);
+                        await clientData.WebSocket!.SendAsync(encodedBytes.AsMemory()[..totalCount],
+                            WebSocketMessageType.Binary, true, default);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(encodedBytes);
+                    }
+                }
+                finally
+                {
+                    response.MemoryOwner?.Dispose();
                 }
             }
         }

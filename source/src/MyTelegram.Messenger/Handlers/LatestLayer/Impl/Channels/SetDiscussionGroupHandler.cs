@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Channels;
 
 ///<summary>
 /// Associate a group to a channel as <a href="https://corefork.telegram.org/api/discussion">discussion group</a> for that channel
@@ -28,7 +28,7 @@ internal sealed class SetDiscussionGroupHandler(
         }
         else
         {
-            throw new NotImplementedException();
+            throw new RpcException(RpcErrors.RpcErrors400.ChannelInvalid);
         }
 
         long? groupId = null;

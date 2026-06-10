@@ -1,4 +1,4 @@
-namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Users;
+﻿namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Users;
 
 ///<summary>
 /// Returns basic user info according to their identifiers.
@@ -39,7 +39,7 @@ internal sealed class GetUsersHandler(
                     userIds.Add(input.UserId);
                     break;
                 default:
-                    throw new NotImplementedException();
+                    throw new RpcException(RpcErrors.RpcErrors400.PeerIdInvalid);
             }
         }
 

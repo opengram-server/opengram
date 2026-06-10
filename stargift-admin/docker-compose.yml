@@ -6,26 +6,25 @@ services:
     ports:
       - "3001:3001"
     environment:
-      # ✅ Updated with correct credentials from docker/compose/.env
-      - MONGODB_URI=mongodb://user:CHANGE_ME@mongodb:27017/tg?authSource=admin
+      - MONGODB_URI=mongodb://mongodb:27017/tg
       - DB_NAME=tg
       - PORT=3001
-      - CORS_ORIGIN=http://localhost:5173
-      - ADMIN_API_URL=http://localhost:5555
-      - ADMIN_API_KEY=CHANGE_ME
-      # ✅ MinIO credentials
+      - CORS_ORIGIN=http://CHANGE_ME:5173
+      - ADMIN_API_URL=http://admin-api:5000
+      - ADMIN_API_KEY=
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=CHANGE_ME
-      # ✅ RabbitMQ credentials
       - RABBITMQ_URL=amqp://user:CHANGE_ME@rabbitmq:5672
     networks:
       - default
-      - compose_default
+      - compose_tg-net
 
   stargift-admin-frontend:
     build: ./frontend
+    environment:
+      - VITE_API_URL=
     ports:
       - "5173:5173"
     depends_on:
@@ -34,5 +33,5 @@ services:
       - default
 
 networks:
-  compose_default:
+  compose_tg-net:
     external: true

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Search, Info, Shield, Filter, User, Calendar, CheckCircle2, XCircle, AlertTriangle, Snowflake } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const FrozenAccounts = () => {
   const [frozenAccounts, setFrozenAccounts] = useState([]);

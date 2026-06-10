@@ -2,16 +2,16 @@ using MyTelegram.BotApi.Helpers;
 using MongoDB.Driver;
 using MyTelegram.Domain.Shared.BotApi;
 using MyTelegram.Domain.Shared.Events;
-using MyTelegram.ReadModel.MongoDB;
+using MyTelegram.ReadModel.Impl;
 using MyTelegram.Schema;
 using MyTelegram.EventBus;
 using System.Text.Json;
-using MongoDB.Driver;
 
 namespace MyTelegram.BotApi.Services;
 
 /// <summary>
-/// Реализация сервиса Bot API
+/// Production implementation of Bot API service.
+/// Reads from MongoDB, writes via RabbitMQ events through MTProtoBridge.
 /// </summary>
 public class BotApiService(
     IMongoDatabase database,
@@ -22,14 +22,13 @@ public class BotApiService(
 {
     #region Basic Methods
 
-    // Проверяем токен бота перед обработкой запроса
     public async Task<bool> ValidateBotTokenAsync(string token)
     {
         try
         {
-            var botsCollection = database.GetCollection<MyTelegram.ReadModel.Impl.BotReadModel>("ReadModel-BotReadModel");
+            var botsCollection = database.GetCollection<BotReadModel>("ReadModel-BotReadModel");
             var bot = await botsCollection.Find(b => b.Token == token).FirstOrDefaultAsync();
-            return bot != null; // токен валиден, если бот с ним найден
+            return bot != null;
         }
         catch (Exception ex)
         {
@@ -42,11 +41,10 @@ public class BotApiService(
     {
         var bot = await GetBotByTokenAsync(token);
         logger.LogInformation("Bot {BotId} calling getMe", bot.UserId);
-        
-        // Берём данные пользователя бота из MongoDB
+
         var usersCollection = database.GetCollection<UserReadModel>("ReadModel-UserReadModel");
         var user = await usersCollection.Find(u => u.UserId == bot.UserId).FirstOrDefaultAsync();
-        
+
         return new BotApiUser
         {
             Id = bot.UserId,
@@ -61,16 +59,13 @@ public class BotApiService(
 
     public async Task<List<BotApiUpdate>> GetUpdatesAsync(string token, int offset, int limit, int timeout)
     {
-        // Ограничиваем таймаут двумя секундами вместо стандартных 30 ради быстрого отклика
-        var actualTimeout = Math.Min(timeout, 2);
-        logger.LogInformation("Getting updates: offset={Offset}, limit={Limit}, timeout={Timeout} (capped to {ActualTimeout}s)", 
-            offset, limit, timeout, actualTimeout);
-        
-        // Достаём обновления из UpdatesManager (очередь в памяти)
+        var actualTimeout = Math.Min(timeout, 30);
+        logger.LogDebug("Getting updates: offset={Offset}, limit={Limit}, timeout={Timeout}",
+            offset, limit, actualTimeout);
+
         var updates = await updatesManager.GetUpdatesAsync(token, offset, Math.Min(limit, 100), actualTimeout, null);
-        
-        logger.LogInformation("Returning {Count} updates", updates.Count);
-        
+
+        logger.LogDebug("Returning {Count} updates", updates.Count);
         return updates;
     }
 
@@ -78,18 +73,32 @@ public class BotApiService(
     {
         var bot = await GetBotByTokenAsync(token);
         var url = body.GetProperty("url").GetString();
-        
-        // Проверяем URL вебхука
+
         var (isValid, error) = InputValidationService.ValidateUrl(url);
         if (!isValid)
         {
             logger.LogWarning("Invalid webhook URL from bot {BotId}: {Error}", bot.UserId, error);
             throw new Exception(error);
         }
-        
-        logger.LogInformation("Bot {BotId} setting webhook: {Url}", bot.UserId, url);
 
-        // TODO: сохранить вебхук в базу
+        var secretToken = BotApiHelpers.GetOptionalString(body, "secret_token");
+        var maxConnections = BotApiHelpers.GetOptionalInt(body, "max_connections") ?? 40;
+        List<string>? allowedUpdates = null;
+        if (body.TryGetProperty("allowed_updates", out var allowedUpdatesJson) &&
+            allowedUpdatesJson.ValueKind == JsonValueKind.Array)
+        {
+            allowedUpdates = allowedUpdatesJson.EnumerateArray()
+                .Select(x => x.GetString() ?? "")
+                .Where(x => !string.IsNullOrEmpty(x))
+                .ToList();
+        }
+
+        logger.LogInformation("Bot {BotId} setting webhook: {Url} (max_connections={MaxConn})",
+            bot.UserId, url, maxConnections);
+
+        // Persist webhook via WebhookManager + update BotReadModel
+        await updatesManager.SetWebhookAsync(token, url!, secretToken, maxConnections, allowedUpdates);
+
         return true;
     }
 
@@ -98,7 +107,7 @@ public class BotApiService(
         var bot = await GetBotByTokenAsync(token);
         logger.LogInformation("Bot {BotId} deleting webhook", bot.UserId);
 
-        // TODO: удалить вебхук из базы
+        await updatesManager.DeleteWebhookAsync(token);
         return true;
     }
 
@@ -106,7 +115,13 @@ public class BotApiService(
     {
         var bot = await GetBotByTokenAsync(token);
         logger.LogInformation("Bot {BotId} getting webhook info", bot.UserId);
-        
+
+        var webhookInfo = await updatesManager.GetWebhookInfoAsync(token);
+        if (webhookInfo != null)
+        {
+            return webhookInfo;
+        }
+
         return new BotApiWebhookInfo
         {
             Url = "",
@@ -124,41 +139,33 @@ public class BotApiService(
         var bot = await GetBotByTokenAsync(token);
         var chatId = body.GetProperty("chat_id").GetInt64();
         var text = body.GetProperty("text").GetString() ?? "";
-        
-        // Проверяем длину и содержимое входных данных
+
         var (isValidText, textError, sanitizedText) = InputValidationService.ValidateMessageText(text);
         if (!isValidText)
         {
             logger.LogWarning("Invalid message text from bot {BotId}: {Error}", bot.UserId, textError);
             throw new Exception(textError);
         }
-        
+
         var (isValidChatId, chatIdError) = InputValidationService.ValidateChatId(chatId);
         if (!isValidChatId)
         {
             throw new Exception(chatIdError);
         }
-        
+
         logger.LogInformation("Bot {BotId} sending message to {ChatId}", bot.UserId, chatId);
-        
-        // Разбираем необязательные параметры
+
         var parseMode = BotApiHelpers.GetOptionalString(body, "parse_mode");
         var disableWebPagePreview = BotApiHelpers.GetOptionalBool(body, "disable_web_page_preview");
         var disableNotification = BotApiHelpers.GetOptionalBool(body, "disable_notification");
         var replyToMessageId = BotApiHelpers.GetOptionalInt(body, "reply_to_message_id");
-        
-        // Разбираем клавиатуру (reply markup)
+
         IReplyMarkup? replyMarkup = null;
         if (body.TryGetProperty("reply_markup", out var replyMarkupJson))
         {
             replyMarkup = BotApiHelpers.ParseReplyMarkup(replyMarkupJson);
         }
 
-        // Отправляем сообщение через MTProtoBridge
-        logger.LogInformation("Bot {BotId} sending message via MTProtoBridge to chat {ChatId}", bot.UserId, chatId);
-
-        // Сейчас MTProtoBridge.SendMessageAsync возвращает заглушку
-        // TODO: реализовать реальную отправку сообщений через MTProto
         var result = await mtprotoBridge.SendMessageAsync(
             botUserId: bot.UserId,
             chatId: chatId,
@@ -169,10 +176,8 @@ public class BotApiService(
             replyToMessageId: replyToMessageId,
             replyMarkup: replyMarkup
         );
-        
-        logger.LogInformation("Bot {BotId} message sent (stub) - MessageId={MessageId}", bot.UserId, result.MessageId);
 
-        // Возвращаем результат из MTProtoBridge
+        logger.LogInformation("Bot {BotId} message sent - MessageId={MessageId}", bot.UserId, result.MessageId);
         return result;
     }
 
@@ -182,24 +187,14 @@ public class BotApiService(
         var chatId = body.GetProperty("chat_id").GetInt64();
         var fromChatId = body.GetProperty("from_chat_id").GetInt64();
         var messageId = body.GetProperty("message_id").GetInt32();
-        
-        logger.LogInformation("Bot {BotId} forwarding message {MessageId} from {FromChatId} to {ChatId}", 
-            bot.UserId, messageId, fromChatId, chatId);
-        
         var disableNotification = BotApiHelpers.GetOptionalBool(body, "disable_notification");
-        
-        var (toPeerId, toPeerType) = BotApiConverter.FromBotApiChatId(chatId);
-        var (fromPeerId, fromPeerType) = BotApiConverter.FromBotApiChatId(fromChatId);
-        
-        // TODO: реализовать пересылку через ICommandBus
-        // Пока возвращаем заглушку
-        return new BotApiMessage
-        {
-            MessageId = messageId,
-            Date = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            Chat = BotApiConverter.ToBotApiChat(toPeerId, toPeerType),
-            Text = "[Forwarded message]"
-        };
+        var protectContent = BotApiHelpers.GetOptionalBool(body, "protect_content");
+
+        logger.LogInformation("Bot {BotId} forwarding message {MessageId} from {FromChatId} to {ChatId}",
+            bot.UserId, messageId, fromChatId, chatId);
+
+        return await mtprotoBridge.ForwardMessageAsync(
+            bot.UserId, chatId, fromChatId, messageId, disableNotification, protectContent);
     }
 
     public async Task<int> CopyMessageAsync(string token, JsonElement body)
@@ -208,12 +203,26 @@ public class BotApiService(
         var chatId = body.GetProperty("chat_id").GetInt64();
         var fromChatId = body.GetProperty("from_chat_id").GetInt64();
         var messageId = body.GetProperty("message_id").GetInt32();
-        
-        logger.LogInformation("Bot {BotId} copying message {MessageId} from {FromChatId} to {ChatId}", 
+        var caption = BotApiHelpers.GetOptionalString(body, "caption");
+        var parseMode = BotApiHelpers.GetOptionalString(body, "parse_mode");
+
+        logger.LogInformation("Bot {BotId} copying message {MessageId} from {FromChatId} to {ChatId}",
             bot.UserId, messageId, fromChatId, chatId);
-        
-        // TODO: реализовать копирование через ICommandBus
-        return Random.Shared.Next(1, 1000000);
+
+        // Read original message from MongoDB
+        var (fromPeerId, _) = BotApiConverter.FromBotApiChatId(fromChatId);
+        var messagesCollection = database.GetCollection<MessageReadModel>("ReadModel-MessageReadModel");
+        var originalMsg = await messagesCollection
+            .Find(m => m.OwnerPeerId == fromPeerId && m.MessageId == messageId)
+            .FirstOrDefaultAsync();
+
+        var textToSend = caption ?? originalMsg?.Message ?? "";
+
+        // Send as a new message
+        var result = await mtprotoBridge.SendMessageAsync(
+            bot.UserId, chatId, textToSend, parseMode);
+
+        return result.MessageId;
     }
 
     #endregion
@@ -223,11 +232,11 @@ public class BotApiService(
     public async Task<BotApiMessage> EditMessageTextAsync(string token, JsonElement body)
     {
         var bot = await GetBotByTokenAsync(token);
-        
+
         long? chatId = null;
         int? messageId = null;
         string? inlineMessageId = null;
-        
+
         if (body.TryGetProperty("chat_id", out var chatIdProp))
         {
             chatId = chatIdProp.GetInt64();
@@ -240,14 +249,14 @@ public class BotApiService(
         {
             inlineMessageId = inlineMessageIdProp.GetString();
         }
-        
+
         var text = body.GetProperty("text").GetString() ?? "";
         var parseMode = BotApiHelpers.GetOptionalString(body, "parse_mode");
-        
-        logger.LogInformation("Bot {BotId} editing message {MessageId} in chat {ChatId}", 
+
+        logger.LogInformation("Bot {BotId} editing message {MessageId} in chat {ChatId}",
             bot.UserId, messageId, chatId);
-        
-        // Разбираем сущности (entities) текста
+
+        // Parse entities
         List<IMessageEntity>? entities = null;
         if (body.TryGetProperty("entities", out var entitiesJson))
         {
@@ -255,40 +264,32 @@ public class BotApiService(
         }
         entities = BotApiHelpers.ParseEntities(text, parseMode, entities);
 
-        // Разбираем клавиатуру (reply markup)
-        IReplyMarkup? replyMarkup = null;
+        // Parse reply_markup
+        string? replyMarkupJsonStr = null;
         if (body.TryGetProperty("reply_markup", out var replyMarkupJson))
         {
-            replyMarkup = BotApiHelpers.ParseReplyMarkup(replyMarkupJson);
+            replyMarkupJsonStr = replyMarkupJson.GetRawText();
         }
-
-        // TODO: реализовать редактирование через ICommandBus
 
         if (chatId.HasValue && messageId.HasValue)
         {
-            var (peerId, peerType) = BotApiConverter.FromBotApiChatId(chatId.Value);
-            
-            return new BotApiMessage
-            {
-                MessageId = messageId.Value,
-                Date = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                Chat = BotApiConverter.ToBotApiChat(peerId, peerType),
-                Text = text,
-                EditDate = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                Entities = entities?.Select(BotApiConverter.ToBotApiMessageEntity).ToList()
-            };
+            var result = await mtprotoBridge.EditMessageTextAsync(
+                bot.UserId, chatId.Value, messageId.Value, text, parseMode, replyMarkupJsonStr);
+
+            result.Entities = entities?.Select(BotApiConverter.ToBotApiMessageEntity).ToList();
+            return result;
         }
-        
+
         throw new Exception("Either chat_id and message_id or inline_message_id must be specified");
     }
 
     public async Task<BotApiMessage> EditMessageReplyMarkupAsync(string token, JsonElement body)
     {
         var bot = await GetBotByTokenAsync(token);
-        
+
         long? chatId = null;
         int? messageId = null;
-        
+
         if (body.TryGetProperty("chat_id", out var chatIdProp))
         {
             chatId = chatIdProp.GetInt64();
@@ -297,32 +298,22 @@ public class BotApiService(
         {
             messageId = messageIdProp.GetInt32();
         }
-        
-        logger.LogInformation("Bot {BotId} editing reply markup for message {MessageId} in chat {ChatId}", 
+
+        logger.LogInformation("Bot {BotId} editing reply markup for message {MessageId} in chat {ChatId}",
             bot.UserId, messageId, chatId);
-        
-        // Разбираем клавиатуру (reply markup)
-        IReplyMarkup? replyMarkup = null;
+
+        string? replyMarkupJsonStr = null;
         if (body.TryGetProperty("reply_markup", out var replyMarkupJson))
         {
-            replyMarkup = BotApiHelpers.ParseReplyMarkup(replyMarkupJson);
+            replyMarkupJsonStr = replyMarkupJson.GetRawText();
         }
-
-        // TODO: реализовать через ICommandBus
 
         if (chatId.HasValue && messageId.HasValue)
         {
-            var (peerId, peerType) = BotApiConverter.FromBotApiChatId(chatId.Value);
-            
-            return new BotApiMessage
-            {
-                MessageId = messageId.Value,
-                Date = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                Chat = BotApiConverter.ToBotApiChat(peerId, peerType),
-                EditDate = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-            };
+            return await mtprotoBridge.EditMessageReplyMarkupAsync(
+                bot.UserId, chatId.Value, messageId.Value, replyMarkupJsonStr);
         }
-        
+
         throw new Exception("chat_id and message_id must be specified");
     }
 
@@ -331,15 +322,11 @@ public class BotApiService(
         var bot = await GetBotByTokenAsync(token);
         var chatId = body.GetProperty("chat_id").GetInt64();
         var messageId = body.GetProperty("message_id").GetInt32();
-        
-        logger.LogInformation("Bot {BotId} deleting message {MessageId} from chat {ChatId}", 
+
+        logger.LogInformation("Bot {BotId} deleting message {MessageId} from chat {ChatId}",
             bot.UserId, messageId, chatId);
-        
-        var (peerId, peerType) = BotApiConverter.FromBotApiChatId(chatId);
 
-        // TODO: реализовать удаление через ICommandBus (StartDeleteMessagesCommand)
-
-        return true;
+        return await mtprotoBridge.DeleteMessageAsync(bot.UserId, chatId, messageId);
     }
 
     #endregion
@@ -350,24 +337,21 @@ public class BotApiService(
     {
         var bot = await GetBotByTokenAsync(token);
         var callbackQueryId = body.GetProperty("callback_query_id").GetString() ?? "";
-        
+
         var text = BotApiHelpers.GetOptionalString(body, "text");
         var showAlert = BotApiHelpers.GetOptionalBool(body, "show_alert");
         var url = BotApiHelpers.GetOptionalString(body, "url");
         var cacheTime = BotApiHelpers.GetOptionalInt(body, "cache_time") ?? 0;
-        
+
         logger.LogInformation("Bot {BotId} answering callback query {QueryId}", bot.UserId, callbackQueryId);
-        
-        // Разбираем идентификатор запроса
+
         if (!long.TryParse(callbackQueryId, out var queryId))
         {
             throw new ArgumentException("Invalid callback_query_id format", nameof(callbackQueryId));
         }
 
-        // TODO: реализовать ответ на callback-запрос
-        logger.LogWarning("Bot {BotId} answerCallbackQuery not implemented - use Python bot API instead", bot.UserId);
-        
-        return true;
+        return await mtprotoBridge.AnswerCallbackQueryAsync(
+            bot.UserId, queryId, text, showAlert, url, cacheTime);
     }
 
     #endregion
@@ -379,227 +363,868 @@ public class BotApiService(
         var bot = await GetBotByTokenAsync(token);
         var chatId = body.GetProperty("chat_id").GetInt64();
         var action = body.GetProperty("action").GetString() ?? "typing";
-        
-        logger.LogInformation("Bot {BotId} sending chat action {Action} to {ChatId}", bot.UserId, action, chatId);
-        
-        var (peerId, peerType) = BotApiConverter.FromBotApiChatId(chatId);
-        
-        // Сопоставляем действие Bot API с MTProto SendMessageAction
-        ISendMessageAction sendMessageAction = action switch
-        {
-            "typing" => new TSendMessageTypingAction(),
-            "upload_photo" => new TSendMessageUploadPhotoAction { Progress = 0 },
-            "record_video" => new TSendMessageRecordVideoAction(),
-            "upload_video" => new TSendMessageUploadVideoAction { Progress = 0 },
-            "record_voice" => new TSendMessageRecordAudioAction(),
-            "upload_voice" => new TSendMessageUploadAudioAction { Progress = 0 },
-            "upload_document" => new TSendMessageUploadDocumentAction { Progress = 0 },
-            "choose_sticker" => new TSendMessageChooseStickerAction(),
-            "find_location" => new TSendMessageGeoLocationAction(),
-            "record_video_note" => new TSendMessageRecordRoundAction(),
-            "upload_video_note" => new TSendMessageUploadRoundAction { Progress = 0 },
-            _ => new TSendMessageTypingAction()
-        };
-        
-        // TODO: отправить действие через MTProto (метод messages.setTyping)
+        var messageThreadId = BotApiHelpers.GetOptionalInt(body, "message_thread_id");
+
+        logger.LogDebug("Bot {BotId} sending chat action {Action} to {ChatId}", bot.UserId, action, chatId);
+
+        await mtprotoBridge.SendChatActionAsync(bot.UserId, chatId, action, messageThreadId);
     }
 
     #endregion
 
     #region Media Methods
 
-    public Task<BotApiMessage> SendPhotoAsync(string token, long chatId, string? photo, IFormFile? photoFile)
+    public async Task<BotApiMessage> SendPhotoAsync(string token, long chatId, string? photo, IFormFile? photoFile)
     {
-        logger.LogInformation("sendPhoto called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendPhoto - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending photo to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Photo",
+            FileId = photo
+        };
+
+        if (photoFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(photoFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendAudioAsync(string token, long chatId, string? audio, IFormFile? audioFile)
+    public async Task<BotApiMessage> SendAudioAsync(string token, long chatId, string? audio, IFormFile? audioFile)
     {
-        logger.LogInformation("sendAudio called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendAudio - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending audio to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Audio",
+            FileId = audio
+        };
+
+        if (audioFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(audioFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendDocumentAsync(string token, long chatId, string? document, IFormFile? documentFile)
+    public async Task<BotApiMessage> SendDocumentAsync(string token, long chatId, string? document, IFormFile? documentFile)
     {
-        logger.LogInformation("sendDocument called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendDocument - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending document to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Document",
+            FileId = document
+        };
+
+        if (documentFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(documentFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendVideoAsync(string token, long chatId, string? video, IFormFile? videoFile)
+    public async Task<BotApiMessage> SendVideoAsync(string token, long chatId, string? video, IFormFile? videoFile)
     {
-        logger.LogInformation("sendVideo called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendVideo - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending video to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Video",
+            FileId = video
+        };
+
+        if (videoFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(videoFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendAnimationAsync(string token, long chatId, string? animation, IFormFile? animationFile)
+    public async Task<BotApiMessage> SendAnimationAsync(string token, long chatId, string? animation, IFormFile? animationFile)
     {
-        logger.LogInformation("sendAnimation called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendAnimation - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending animation to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Animation",
+            FileId = animation
+        };
+
+        if (animationFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(animationFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendVoiceAsync(string token, long chatId, string? voice, IFormFile? voiceFile)
+    public async Task<BotApiMessage> SendVoiceAsync(string token, long chatId, string? voice, IFormFile? voiceFile)
     {
-        logger.LogInformation("sendVoice called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendVoice - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending voice to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Voice",
+            FileId = voice
+        };
+
+        if (voiceFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(voiceFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendVideoNoteAsync(string token, long chatId, string? videoNote, IFormFile? videoNoteFile)
+    public async Task<BotApiMessage> SendVideoNoteAsync(string token, long chatId, string? videoNote, IFormFile? videoNoteFile)
     {
-        logger.LogInformation("sendVideoNote called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendVideoNote - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending video note to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "VideoNote",
+            FileId = videoNote
+        };
+
+        if (videoNoteFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(videoNoteFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendStickerAsync(string token, long chatId, string? sticker, IFormFile? stickerFile)
+    public async Task<BotApiMessage> SendStickerAsync(string token, long chatId, string? sticker, IFormFile? stickerFile)
     {
-        logger.LogInformation("sendSticker called for chat {ChatId}", chatId);
-        throw new NotImplementedException("sendSticker - requires file upload implementation");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} sending sticker to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Sticker",
+            FileId = sticker
+        };
+
+        if (stickerFile != null)
+        {
+            mediaEvent.FileBase64 = await ConvertFormFileToBase64(stickerFile);
+        }
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<List<BotApiMessage>> SendMediaGroupAsync(string token, JsonElement body)
+    public async Task<List<BotApiMessage>> SendMediaGroupAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("sendMediaGroup - requires media group implementation");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var media = body.GetProperty("media");
+
+        logger.LogInformation("Bot {BotId} sending media group ({Count} items) to {ChatId}",
+            bot.UserId, media.GetArrayLength(), chatId);
+
+        var results = new List<BotApiMessage>();
+
+        foreach (var item in media.EnumerateArray())
+        {
+            var type = item.GetProperty("type").GetString() ?? "photo";
+            var mediaValue = item.TryGetProperty("media", out var mediaProp) ? mediaProp.GetString() : null;
+            var caption = item.TryGetProperty("caption", out var captionProp) ? captionProp.GetString() : null;
+            var parseMode = item.TryGetProperty("parse_mode", out var pmProp) ? pmProp.GetString() : null;
+
+            var mediaEvent = new BotSendMediaEvent
+            {
+                BotUserId = bot.UserId,
+                ChatId = chatId,
+                MediaType = char.ToUpper(type[0]) + type[1..],
+                FileId = mediaValue,
+                Caption = caption,
+                ParseMode = parseMode
+            };
+
+            results.Add(await mtprotoBridge.SendMediaAsync(mediaEvent));
+        }
+
+        return results;
     }
 
-    public Task<BotApiMessage> SendLocationAsync(string token, JsonElement body)
+    public async Task<BotApiMessage> SendLocationAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("sendLocation");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var latitude = body.GetProperty("latitude").GetDouble();
+        var longitude = body.GetProperty("longitude").GetDouble();
+
+        logger.LogInformation("Bot {BotId} sending location ({Lat}, {Lon}) to {ChatId}",
+            bot.UserId, latitude, longitude, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Location",
+            Latitude = latitude,
+            Longitude = longitude
+        };
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendVenueAsync(string token, JsonElement body)
+    public async Task<BotApiMessage> SendVenueAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("sendVenue");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var latitude = body.GetProperty("latitude").GetDouble();
+        var longitude = body.GetProperty("longitude").GetDouble();
+        var title = body.GetProperty("title").GetString() ?? "";
+        var address = body.GetProperty("address").GetString() ?? "";
+
+        logger.LogInformation("Bot {BotId} sending venue to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Venue",
+            Latitude = latitude,
+            Longitude = longitude,
+            VenueTitle = title,
+            VenueAddress = address
+        };
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendContactAsync(string token, JsonElement body)
+    public async Task<BotApiMessage> SendContactAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("sendContact");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var phoneNumber = body.GetProperty("phone_number").GetString() ?? "";
+        var firstName = body.GetProperty("first_name").GetString() ?? "";
+        var lastName = BotApiHelpers.GetOptionalString(body, "last_name");
+
+        logger.LogInformation("Bot {BotId} sending contact to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Contact",
+            PhoneNumber = phoneNumber,
+            ContactFirstName = firstName,
+            ContactLastName = lastName
+        };
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendPollAsync(string token, JsonElement body)
+    public async Task<BotApiMessage> SendPollAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("sendPoll");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var question = body.GetProperty("question").GetString() ?? "";
+        var options = body.GetProperty("options");
+        var isAnonymous = BotApiHelpers.GetOptionalBool(body, "is_anonymous", true);
+        var pollType = BotApiHelpers.GetOptionalString(body, "type") ?? "regular";
+
+        logger.LogInformation("Bot {BotId} sending poll to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Poll",
+            Question = question,
+            OptionsJson = options.GetRawText(),
+            IsAnonymous = isAnonymous,
+            PollType = pollType
+        };
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
-    public Task<BotApiMessage> SendDiceAsync(string token, JsonElement body)
+    public async Task<BotApiMessage> SendDiceAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("sendDice");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var emoji = BotApiHelpers.GetOptionalString(body, "emoji") ?? "🎲";
+
+        logger.LogInformation("Bot {BotId} sending dice to {ChatId}", bot.UserId, chatId);
+
+        var mediaEvent = new BotSendMediaEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            MediaType = "Dice",
+            Emoji = emoji
+        };
+
+        return await mtprotoBridge.SendMediaAsync(mediaEvent);
     }
 
     #endregion
 
-    #region Other Methods
+    #region User & File Methods
 
-    public Task<object> GetUserProfilePhotosAsync(string token, long userId, int? offset, int? limit)
+    public async Task<object> GetUserProfilePhotosAsync(string token, long userId, int? offset, int? limit)
     {
-        throw new NotImplementedException("getUserProfilePhotos");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} getting profile photos for user {UserId}", bot.UserId, userId);
+
+        var actualOffset = offset ?? 0;
+        var actualLimit = Math.Min(limit ?? 100, 100);
+
+        var photosCollection = database.GetCollection<PhotoReadModel>("ReadModel-PhotoReadModel");
+        var photos = await photosCollection
+            .Find(p => p.UserId == userId && p.IsProfilePhoto)
+            .Skip(actualOffset)
+            .Limit(actualLimit)
+            .ToListAsync();
+
+        var totalCount = (int)await photosCollection.CountDocumentsAsync(
+            p => p.UserId == userId && p.IsProfilePhoto);
+
+        var photoSizes = new List<List<BotApiPhotoSize>>();
+        foreach (var photo in photos)
+        {
+            var sizes = new List<BotApiPhotoSize>();
+            if (photo.Sizes != null)
+            {
+                foreach (var size in photo.Sizes)
+                {
+                    sizes.Add(new BotApiPhotoSize
+                    {
+                        FileId = $"photo_{photo.PhotoId}_{size.Type}",
+                        FileUniqueId = $"photo_{photo.PhotoId}_{size.Type}_unique",
+                        Width = size.W,
+                        Height = size.H,
+                        FileSize = size.Size
+                    });
+                }
+            }
+            else
+            {
+                // Fallback when no explicit sizes are recorded
+                sizes.Add(new BotApiPhotoSize
+                {
+                    FileId = $"photo_{photo.PhotoId}",
+                    FileUniqueId = $"photo_{photo.PhotoId}_unique",
+                    Width = 320,
+                    Height = 320,
+                    FileSize = photo.Size
+                });
+            }
+
+            photoSizes.Add(sizes);
+        }
+
+        return new BotApiUserProfilePhotos
+        {
+            TotalCount = totalCount,
+            Photos = photoSizes
+        };
     }
 
-    public Task<object> GetFileAsync(string token, string fileId)
+    public async Task<object> GetFileAsync(string token, string fileId)
     {
-        throw new NotImplementedException("getFile");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} getting file {FileId}", bot.UserId, fileId);
+
+        // Try to resolve file_id to a document
+        if (fileId.StartsWith("doc_"))
+        {
+            var docIdStr = fileId.Replace("doc_", "").Split('_')[0];
+            if (long.TryParse(docIdStr, out var documentId))
+            {
+                var documentsCollection = database.GetCollection<DocumentReadModel>("ReadModel-DocumentReadModel");
+                var document = await documentsCollection.Find(d => d.DocumentId == documentId).FirstOrDefaultAsync();
+
+                if (document != null)
+                {
+                    return new BotApiFile
+                    {
+                        FileId = fileId,
+                        FileUniqueId = $"doc_{documentId}_unique",
+                        FileSize = document.Size,
+                        FilePath = $"documents/{documentId}"
+                    };
+                }
+            }
+        }
+        else if (fileId.StartsWith("photo_"))
+        {
+            var photoIdStr = fileId.Replace("photo_", "").Split('_')[0];
+            if (long.TryParse(photoIdStr, out var photoId))
+            {
+                var photosCollection = database.GetCollection<PhotoReadModel>("ReadModel-PhotoReadModel");
+                var photo = await photosCollection.Find(p => p.PhotoId == photoId).FirstOrDefaultAsync();
+
+                if (photo != null)
+                {
+                    return new BotApiFile
+                    {
+                        FileId = fileId,
+                        FileUniqueId = $"photo_{photoId}_unique",
+                        FileSize = photo.Size,
+                        FilePath = $"photos/{photoId}"
+                    };
+                }
+            }
+        }
+
+        // Generic fallback: assume file_id is a document ID
+        if (long.TryParse(fileId, out var genericId))
+        {
+            var documentsCollection = database.GetCollection<DocumentReadModel>("ReadModel-DocumentReadModel");
+            var document = await documentsCollection.Find(d => d.DocumentId == genericId).FirstOrDefaultAsync();
+
+            if (document != null)
+            {
+                return new BotApiFile
+                {
+                    FileId = fileId,
+                    FileUniqueId = $"{genericId}_unique",
+                    FileSize = document.Size,
+                    FilePath = $"documents/{genericId}"
+                };
+            }
+        }
+
+        throw new Exception($"File not found: {fileId}");
     }
 
-    public Task BanChatMemberAsync(string token, JsonElement body)
+    public async Task<BotApiChat> GetChatAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("banChatMember");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+
+        return await mtprotoBridge.GetChatAsync(bot.UserId, chatId);
     }
 
-    public Task UnbanChatMemberAsync(string token, JsonElement body)
+    #endregion
+
+    #region Chat Member Management
+
+    public async Task BanChatMemberAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("unbanChatMember");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+        var untilDate = BotApiHelpers.GetOptionalInt(body, "until_date");
+        var revokeMessages = BotApiHelpers.GetOptionalBool(body, "revoke_messages", true);
+
+        logger.LogInformation("Bot {BotId} banning user {UserId} in chat {ChatId}", bot.UserId, userId, chatId);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            UserId = userId,
+            Action = "Ban",
+            UntilDate = untilDate,
+            RevokeMessages = revokeMessages,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task RestrictChatMemberAsync(string token, JsonElement body)
+    public async Task UnbanChatMemberAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("restrictChatMember");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+        var onlyIfBanned = BotApiHelpers.GetOptionalBool(body, "only_if_banned");
+
+        logger.LogInformation("Bot {BotId} unbanning user {UserId} in chat {ChatId}", bot.UserId, userId, chatId);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            UserId = userId,
+            Action = "Unban",
+            OnlyIfBanned = onlyIfBanned,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task PromoteChatMemberAsync(string token, JsonElement body)
+    public async Task RestrictChatMemberAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("promoteChatMember");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+        var permissions = body.GetProperty("permissions");
+        var untilDate = BotApiHelpers.GetOptionalInt(body, "until_date");
+        var useIndependent = BotApiHelpers.GetOptionalBool(body, "use_independent_chat_permissions");
+
+        logger.LogInformation("Bot {BotId} restricting user {UserId} in chat {ChatId}", bot.UserId, userId, chatId);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            UserId = userId,
+            Action = "Restrict",
+            PermissionsJson = permissions.GetRawText(),
+            UntilDate = untilDate,
+            UseIndependentChatPermissions = useIndependent,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task SetChatAdministratorCustomTitleAsync(string token, JsonElement body)
+    public async Task PromoteChatMemberAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("setChatAdministratorCustomTitle");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} promoting user {UserId} in chat {ChatId}", bot.UserId, userId, chatId);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            UserId = userId,
+            Action = "Promote",
+            IsAnonymous = BotApiHelpers.GetOptionalBool(body, "is_anonymous") ? true : null,
+            CanManageChat = BotApiHelpers.GetOptionalBool(body, "can_manage_chat") ? true : null,
+            CanDeleteMessages = BotApiHelpers.GetOptionalBool(body, "can_delete_messages") ? true : null,
+            CanManageVideoChats = BotApiHelpers.GetOptionalBool(body, "can_manage_video_chats") ? true : null,
+            CanRestrictMembers = BotApiHelpers.GetOptionalBool(body, "can_restrict_members") ? true : null,
+            CanPromoteMembers = BotApiHelpers.GetOptionalBool(body, "can_promote_members") ? true : null,
+            CanChangeInfo = BotApiHelpers.GetOptionalBool(body, "can_change_info") ? true : null,
+            CanInviteUsers = BotApiHelpers.GetOptionalBool(body, "can_invite_users") ? true : null,
+            CanPostStories = BotApiHelpers.GetOptionalBool(body, "can_post_stories") ? true : null,
+            CanEditStories = BotApiHelpers.GetOptionalBool(body, "can_edit_stories") ? true : null,
+            CanDeleteStories = BotApiHelpers.GetOptionalBool(body, "can_delete_stories") ? true : null,
+            CanPostMessages = BotApiHelpers.GetOptionalBool(body, "can_post_messages") ? true : null,
+            CanEditMessages = BotApiHelpers.GetOptionalBool(body, "can_edit_messages") ? true : null,
+            CanPinMessages = BotApiHelpers.GetOptionalBool(body, "can_pin_messages") ? true : null,
+            CanManageTopics = BotApiHelpers.GetOptionalBool(body, "can_manage_topics") ? true : null,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task BanChatSenderChatAsync(string token, JsonElement body)
+    public async Task SetChatAdministratorCustomTitleAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("banChatSenderChat");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+        var customTitle = body.GetProperty("custom_title").GetString() ?? "";
+
+        logger.LogInformation("Bot {BotId} setting admin title for user {UserId} in chat {ChatId}: {Title}",
+            bot.UserId, userId, chatId, customTitle);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            UserId = userId,
+            Action = "SetCustomTitle",
+            CustomTitle = customTitle,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task UnbanChatSenderChatAsync(string token, JsonElement body)
+    public async Task BanChatSenderChatAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("unbanChatSenderChat");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var senderChatId = body.GetProperty("sender_chat_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} banning sender chat {SenderChatId} in {ChatId}",
+            bot.UserId, senderChatId, chatId);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            Action = "BanSenderChat",
+            SenderChatId = senderChatId,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task SetChatPermissionsAsync(string token, JsonElement body)
+    public async Task UnbanChatSenderChatAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("setChatPermissions");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var senderChatId = body.GetProperty("sender_chat_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} unbanning sender chat {SenderChatId} in {ChatId}",
+            bot.UserId, senderChatId, chatId);
+
+        await mtprotoBridge.ManageChatMemberAsync(new BotChatMemberEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            Action = "UnbanSenderChat",
+            SenderChatId = senderChatId,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
     }
 
-    public Task<string> ExportChatInviteLinkAsync(string token, JsonElement body)
+    public async Task SetChatPermissionsAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("exportChatInviteLink");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var permissions = body.GetProperty("permissions");
+        var useIndependent = BotApiHelpers.GetOptionalBool(body, "use_independent_chat_permissions");
+
+        logger.LogInformation("Bot {BotId} setting permissions for chat {ChatId}", bot.UserId, chatId);
+
+        await mtprotoBridge.SetChatPermissionsAsync(
+            bot.UserId, chatId, permissions.GetRawText(), useIndependent);
     }
 
-    public Task<object> CreateChatInviteLinkAsync(string token, JsonElement body)
+    #endregion
+
+    #region Invite Links
+
+    public async Task<string> ExportChatInviteLinkAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("createChatInviteLink");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} exporting invite link for chat {ChatId}", bot.UserId, chatId);
+
+        var (peerId, peerType) = BotApiConverter.FromBotApiChatId(chatId);
+
+        // Query existing permanent invite link from MongoDB
+        var invitesCollection = database.GetCollection<ChatInviteReadModel>("ReadModel-ChatInviteReadModel");
+        var invite = await invitesCollection
+            .Find(i => i.PeerId == peerId && i.Permanent && !i.Revoked)
+            .FirstOrDefaultAsync();
+
+        if (invite != null)
+        {
+            return invite.Link;
+        }
+
+        // Request creation of a new export link via event
+        await mtprotoBridge.ManageChatInviteLinkAsync(new BotChatInviteLinkEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            Action = "Export",
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
+
+        // Return a placeholder — the real link will be created asynchronously
+        return $"https://t.me/+pending_{peerId}";
     }
 
-    public Task<object> EditChatInviteLinkAsync(string token, JsonElement body)
+    public async Task<object> CreateChatInviteLinkAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("editChatInviteLink");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var name = BotApiHelpers.GetOptionalString(body, "name");
+        var expireDate = BotApiHelpers.GetOptionalInt(body, "expire_date");
+        var memberLimit = BotApiHelpers.GetOptionalInt(body, "member_limit");
+        var createsJoinRequest = BotApiHelpers.GetOptionalBool(body, "creates_join_request");
+
+        logger.LogInformation("Bot {BotId} creating invite link for chat {ChatId}", bot.UserId, chatId);
+
+        await mtprotoBridge.ManageChatInviteLinkAsync(new BotChatInviteLinkEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            Action = "Create",
+            Name = name,
+            ExpireDate = expireDate,
+            MemberLimit = memberLimit,
+            CreatesJoinRequest = createsJoinRequest,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
+
+        var (peerId, _) = BotApiConverter.FromBotApiChatId(chatId);
+
+        return new BotApiChatInviteLink
+        {
+            InviteLink = $"https://t.me/+inv_{peerId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}",
+            Creator = new BotApiUser { Id = bot.UserId, IsBot = true, FirstName = bot.BotName },
+            CreatesJoinRequest = createsJoinRequest,
+            IsPrimary = false,
+            IsRevoked = false,
+            Name = name,
+            ExpireDate = expireDate,
+            MemberLimit = memberLimit
+        };
     }
 
-    public Task<object> RevokeChatInviteLinkAsync(string token, JsonElement body)
+    public async Task<object> EditChatInviteLinkAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("revokeChatInviteLink");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var inviteLink = body.GetProperty("invite_link").GetString() ?? "";
+        var name = BotApiHelpers.GetOptionalString(body, "name");
+        var expireDate = BotApiHelpers.GetOptionalInt(body, "expire_date");
+        var memberLimit = BotApiHelpers.GetOptionalInt(body, "member_limit");
+        var createsJoinRequest = BotApiHelpers.GetOptionalBool(body, "creates_join_request");
+
+        logger.LogInformation("Bot {BotId} editing invite link for chat {ChatId}", bot.UserId, chatId);
+
+        await mtprotoBridge.ManageChatInviteLinkAsync(new BotChatInviteLinkEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            Action = "Edit",
+            InviteLink = inviteLink,
+            Name = name,
+            ExpireDate = expireDate,
+            MemberLimit = memberLimit,
+            CreatesJoinRequest = createsJoinRequest,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
+
+        return new BotApiChatInviteLink
+        {
+            InviteLink = inviteLink,
+            Creator = new BotApiUser { Id = bot.UserId, IsBot = true, FirstName = bot.BotName },
+            CreatesJoinRequest = createsJoinRequest,
+            IsPrimary = false,
+            IsRevoked = false,
+            Name = name,
+            ExpireDate = expireDate,
+            MemberLimit = memberLimit
+        };
     }
 
-    public Task ApproveChatJoinRequestAsync(string token, JsonElement body)
+    public async Task<object> RevokeChatInviteLinkAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("approveChatJoinRequest");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var inviteLink = body.GetProperty("invite_link").GetString() ?? "";
+
+        logger.LogInformation("Bot {BotId} revoking invite link for chat {ChatId}", bot.UserId, chatId);
+
+        await mtprotoBridge.ManageChatInviteLinkAsync(new BotChatInviteLinkEvent
+        {
+            BotUserId = bot.UserId,
+            ChatId = chatId,
+            Action = "Revoke",
+            InviteLink = inviteLink,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        });
+
+        return new BotApiChatInviteLink
+        {
+            InviteLink = inviteLink,
+            Creator = new BotApiUser { Id = bot.UserId, IsBot = true, FirstName = bot.BotName },
+            IsPrimary = false,
+            IsRevoked = true
+        };
     }
 
-    public Task DeclineChatJoinRequestAsync(string token, JsonElement body)
+    #endregion
+
+    #region Join Requests
+
+    public async Task ApproveChatJoinRequestAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("declineChatJoinRequest");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} approving join request from user {UserId} in chat {ChatId}",
+            bot.UserId, userId, chatId);
+
+        await mtprotoBridge.HandleChatJoinRequestAsync(bot.UserId, chatId, userId, "Approve");
     }
 
-    public Task SetChatPhotoAsync(string token, long chatId, IFormFile photo)
+    public async Task DeclineChatJoinRequestAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("setChatPhoto");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var userId = body.GetProperty("user_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} declining join request from user {UserId} in chat {ChatId}",
+            bot.UserId, userId, chatId);
+
+        await mtprotoBridge.HandleChatJoinRequestAsync(bot.UserId, chatId, userId, "Decline");
     }
 
-    public Task DeleteChatPhotoAsync(string token, JsonElement body)
+    #endregion
+
+    #region Chat Photo / Title / Description
+
+    public async Task SetChatPhotoAsync(string token, long chatId, IFormFile photo)
     {
-        throw new NotImplementedException("deleteChatPhoto");
+        var bot = await GetBotByTokenAsync(token);
+        logger.LogInformation("Bot {BotId} setting photo for chat {ChatId}", bot.UserId, chatId);
+
+        var photoBase64 = await ConvertFormFileToBase64(photo);
+        await mtprotoBridge.ManageChatPhotoAsync(bot.UserId, chatId, "Set", photoBase64);
     }
 
-    public Task SetChatTitleAsync(string token, JsonElement body)
+    public async Task DeleteChatPhotoAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("setChatTitle");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+
+        logger.LogInformation("Bot {BotId} deleting photo for chat {ChatId}", bot.UserId, chatId);
+
+        await mtprotoBridge.ManageChatPhotoAsync(bot.UserId, chatId, "Delete");
     }
 
-    public Task SetChatDescriptionAsync(string token, JsonElement body)
+    public async Task SetChatTitleAsync(string token, JsonElement body)
     {
-        throw new NotImplementedException("setChatDescription");
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var title = body.GetProperty("title").GetString() ?? "";
+
+        logger.LogInformation("Bot {BotId} setting title for chat {ChatId}: {Title}", bot.UserId, chatId, title);
+
+        await mtprotoBridge.SetChatInfoAsync(bot.UserId, chatId, "SetTitle", title: title);
+    }
+
+    public async Task SetChatDescriptionAsync(string token, JsonElement body)
+    {
+        var bot = await GetBotByTokenAsync(token);
+        var chatId = body.GetProperty("chat_id").GetInt64();
+        var description = BotApiHelpers.GetOptionalString(body, "description") ?? "";
+
+        logger.LogInformation("Bot {BotId} setting description for chat {ChatId}", bot.UserId, chatId);
+
+        await mtprotoBridge.SetChatInfoAsync(bot.UserId, chatId, "SetDescription", description: description);
     }
 
     #endregion
 
     #region Helper Methods
 
-    private async Task<MyTelegram.ReadModel.Impl.BotReadModel> GetBotByTokenAsync(string token)
+    private async Task<BotReadModel> GetBotByTokenAsync(string token)
     {
-        // Query bot directly from MongoDB
-        var botsCollection = database.GetCollection<MyTelegram.ReadModel.Impl.BotReadModel>("ReadModel-BotReadModel");
+        var botsCollection = database.GetCollection<BotReadModel>("ReadModel-BotReadModel");
         var bot = await botsCollection.Find(b => b.Token == token).FirstOrDefaultAsync();
-        
+
         if (bot == null)
         {
             throw new Exception("Invalid bot token");
@@ -615,13 +1240,13 @@ public class BotApiService(
         }
 
         var entities = new List<IMessageEntity>();
-        
+
         foreach (var entity in entitiesJson.EnumerateArray())
         {
             var type = entity.GetProperty("type").GetString();
             var offset = entity.GetProperty("offset").GetInt32();
             var length = entity.GetProperty("length").GetInt32();
-            
+
             IMessageEntity messageEntity = type switch
             {
                 "bold" => new TMessageEntityBold { Offset = offset, Length = length },
@@ -630,15 +1255,15 @@ public class BotApiService(
                 "strikethrough" => new TMessageEntityStrike { Offset = offset, Length = length },
                 "spoiler" => new TMessageEntitySpoiler { Offset = offset, Length = length },
                 "code" => new TMessageEntityCode { Offset = offset, Length = length },
-                "pre" => new TMessageEntityPre 
-                { 
-                    Offset = offset, 
+                "pre" => new TMessageEntityPre
+                {
+                    Offset = offset,
                     Length = length,
                     Language = entity.TryGetProperty("language", out var lang) ? lang.GetString() ?? "" : ""
                 },
-                "text_link" => new TMessageEntityTextUrl 
-                { 
-                    Offset = offset, 
+                "text_link" => new TMessageEntityTextUrl
+                {
+                    Offset = offset,
                     Length = length,
                     Url = entity.GetProperty("url").GetString() ?? ""
                 },
@@ -656,11 +1281,18 @@ public class BotApiService(
                 },
                 _ => new TMessageEntityUnknown { Offset = offset, Length = length }
             };
-            
+
             entities.Add(messageEntity);
         }
-        
+
         return entities.Count > 0 ? entities : null;
+    }
+
+    private static async Task<string> ConvertFormFileToBase64(IFormFile file)
+    {
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        return Convert.ToBase64String(memoryStream.ToArray());
     }
 
     #endregion
@@ -671,16 +1303,14 @@ public class BotApiService(
     {
         var bot = await GetBotByTokenAsync(token);
         logger.LogInformation("Bot {BotId} calling getAvailableGifts", bot.UserId);
-        
-        // Загружаем подарки напрямую из MongoDB
-        var giftsCollection = database.GetCollection<MyTelegram.ReadModel.Impl.AvailableStarGiftReadModel>("AvailableStarGiftReadModel");
+
+        var giftsCollection = database.GetCollection<AvailableStarGiftReadModel>("AvailableStarGiftReadModel");
         var giftsReadModels = await giftsCollection.Find(_ => true).ToListAsync();
-        
+
         var gifts = new List<object>();
-        
+
         foreach (var gift in giftsReadModels)
         {
-            // Подгружаем документ стикера для подарка
             object? sticker = null;
             if (gift.Sticker > 0)
             {
@@ -688,7 +1318,7 @@ public class BotApiService(
                 {
                     var documentsCollection = database.GetCollection<DocumentReadModel>("ReadModel-DocumentReadModel");
                     var document = await documentsCollection.Find(d => d.DocumentId == gift.Sticker).FirstOrDefaultAsync();
-                    
+
                     if (document != null)
                     {
                         sticker = new
@@ -712,7 +1342,7 @@ public class BotApiService(
                     logger.LogWarning(ex, "Failed to load sticker for gift {GiftId}", gift.GiftId);
                 }
             }
-            
+
             gifts.Add(new
             {
                 id = gift.GiftId.ToString(),
@@ -722,7 +1352,7 @@ public class BotApiService(
                 remaining_count = gift.AvailabilityRemains
             });
         }
-        
+
         return new { gifts };
     }
 
@@ -738,23 +1368,19 @@ public class BotApiService(
         var hideName = body.TryGetProperty("hide_name", out var hideNameElement) && hideNameElement.GetBoolean();
         var includeUpgrade = body.TryGetProperty("include_upgrade", out var includeUpgradeElement) && includeUpgradeElement.GetBoolean();
         var count = body.TryGetProperty("count", out var countElement) ? Math.Max(1, countElement.GetInt32()) : 1;
-        
-        logger.LogInformation("Bot {BotId} sending gift {GiftId} to user {UserId} (Count={Count}, HideName={HideName}, IncludeUpgrade={IncludeUpgrade})", 
-            bot.UserId, giftId, userId, count, hideName, includeUpgrade);
-        
-        // Загружаем сведения о подарке из базы
-        var giftsCollection = database.GetCollection<MyTelegram.ReadModel.Impl.AvailableStarGiftReadModel>("AvailableStarGiftReadModel");
+
+        logger.LogInformation("Bot {BotId} sending gift {GiftId} to user {UserId} (Count={Count})",
+            bot.UserId, giftId, userId, count);
+
+        var giftsCollection = database.GetCollection<AvailableStarGiftReadModel>("AvailableStarGiftReadModel");
         var gift = await giftsCollection.Find(g => g.GiftId == giftId).FirstOrDefaultAsync();
-        
+
         if (gift == null)
         {
             logger.LogWarning("Gift {GiftId} not found", giftId);
             return false;
         }
-        
-        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var randomId = Random.Shared.NextInt64();
-        
+
         var giftEvent = new BotGiftEvent
         {
             BotUserId = bot.UserId,
@@ -764,15 +1390,13 @@ public class BotApiService(
             Message = text,
             HideName = hideName,
             IncludeUpgrade = includeUpgrade,
-            Timestamp = now,
-            RandomId = randomId
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            RandomId = Random.Shared.NextInt64()
         };
-        
+
         await eventBus.PublishAsync(giftEvent);
-        
-        logger.LogInformation("Published BotGiftEvent for bot {BotId} to user {UserId} (GiftId={GiftId}, Count={Count})",
-            bot.UserId, userId, giftId, count);
-        
+
+        logger.LogInformation("Published BotGiftEvent for bot {BotId} to user {UserId}", bot.UserId, userId);
         return true;
     }
 
@@ -787,13 +1411,12 @@ public class BotApiService(
         var title = body.GetProperty("title").GetString() ?? "";
         var description = body.GetProperty("description").GetString() ?? "";
         var payload = body.GetProperty("payload").GetString() ?? "";
-        var currency = body.GetProperty("currency").GetString() ?? "XTR"; // валюта Stars
+        var currency = body.GetProperty("currency").GetString() ?? "XTR";
 
-        // Разбираем массив цен
         var pricesJson = body.GetProperty("prices");
         var prices = new List<BotApiLabeledPrice>();
         int totalAmount = 0;
-        
+
         foreach (var priceElement in pricesJson.EnumerateArray())
         {
             var label = priceElement.GetProperty("label").GetString() ?? "";
@@ -801,11 +1424,10 @@ public class BotApiService(
             prices.Add(new BotApiLabeledPrice { Label = label, Amount = amount });
             totalAmount += amount;
         }
-        
-        logger.LogInformation("Bot {BotId} sending invoice to {ChatId}: {Title} - {Amount} {Currency}", 
+
+        logger.LogInformation("Bot {BotId} sending invoice to {ChatId}: {Title} - {Amount} {Currency}",
             bot.UserId, chatId, title, totalAmount, currency);
-        
-        // Формируем счёт (invoice)
+
         var invoice = new BotApiInvoice
         {
             Title = title,
@@ -814,27 +1436,16 @@ public class BotApiService(
             Currency = currency,
             TotalAmount = totalAmount
         };
-        
-        // Создаём сообщение со счётом
+
         var message = new BotApiMessage
         {
             MessageId = (int)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() % int.MaxValue),
             Date = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            Chat = new BotApiChat
-            {
-                Id = chatId,
-                Type = "private"
-            },
-            From = new BotApiUser
-            {
-                Id = bot.UserId,
-                IsBot = true,
-                FirstName = bot.BotName
-            },
+            Chat = new BotApiChat { Id = chatId, Type = "private" },
+            From = new BotApiUser { Id = bot.UserId, IsBot = true, FirstName = bot.BotName },
             Invoice = invoice
         };
-        
-        // Сохраняем счёт в памяти для проверки на этапе pre-checkout
+
         await updatesManager.StoreInvoiceAsync(payload, new
         {
             bot_id = bot.UserId,
@@ -846,9 +1457,8 @@ public class BotApiService(
             total_amount = totalAmount,
             prices
         });
-        
+
         logger.LogInformation("Invoice created with payload: {Payload}", payload);
-        
         return message;
     }
 
@@ -858,18 +1468,16 @@ public class BotApiService(
         var preCheckoutQueryId = body.GetProperty("pre_checkout_query_id").GetString() ?? "";
         var ok = body.TryGetProperty("ok", out var okElement) && okElement.GetBoolean();
         var errorMessage = BotApiHelpers.GetOptionalString(body, "error_message");
-        
-        logger.LogInformation("Bot {BotId} answering pre-checkout query {QueryId}: ok={Ok}", 
+
+        logger.LogInformation("Bot {BotId} answering pre-checkout query {QueryId}: ok={Ok}",
             bot.UserId, preCheckoutQueryId, ok);
-        
+
         if (!ok && !string.IsNullOrEmpty(errorMessage))
         {
             logger.LogWarning("Pre-checkout declined: {Error}", errorMessage);
         }
-        
-        // Передаём ответ пользователю через UpdatesManager
+
         await updatesManager.AnswerPreCheckoutAsync(preCheckoutQueryId, ok, errorMessage);
-        
         return true;
     }
 

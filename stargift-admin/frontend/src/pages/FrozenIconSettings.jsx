@@ -17,7 +17,7 @@ export default function FrozenIconSettings() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/users/settings/frozen-icon');
+      const response = await fetch('/api/users/settings/frozen-icon');
       const data = await response.json();
       setSettings(data);
     } catch (error) {
@@ -73,7 +73,7 @@ export default function FrozenIconSettings() {
           formData.append('type', 'animation');
           formData.append('title', 'Frozen Account Animation');
 
-          const uploadResponse = await fetch('http://localhost:3001/api/upload/document', {
+          const uploadResponse = await fetch('/api/upload/document', {
             method: 'POST',
             body: formData
           });
@@ -87,7 +87,7 @@ export default function FrozenIconSettings() {
           }
 
           // Step 2: Save document ID as global frozen animation setting
-          const response = await fetch('http://localhost:3001/api/users/settings/frozen-icon', {
+          const response = await fetch('/api/users/settings/frozen-icon', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -124,7 +124,7 @@ export default function FrozenIconSettings() {
     const toastId = toast.loading('Saving emoji settings...');
 
     try {
-      const response = await fetch('http://localhost:3001/api/users/settings/frozen-icon', {
+      const response = await fetch('/api/users/settings/frozen-icon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

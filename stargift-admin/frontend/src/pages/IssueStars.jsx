@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Search, Coins, Sparkles, TrendingUp, User, Calendar, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_URL = import.meta.env.VITE_API_URL || '/api'
 
 export default function IssueStars() {
     const [userId, setUserId] = useState('')

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Trash2, Upload, Sparkles, Image as ImageIcon, FileArchive, ChevronDown, Package, Gift, Settings } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const Attributes = () => {
     const [gifts, setGifts] = useState([]);

@@ -1,24 +1,31 @@
-// ReSharper disable All
-
 namespace MyTelegram.Messenger.Handlers.LatestLayer.Impl.Messages;
 
 ///<summary>
 /// Deletes a user from a chat and sends a service message on it.
-/// <para>Possible errors</para>
-/// Code Type Description
-/// 400 CHAT_ADMIN_REQUIRED You must be an admin in this chat to do this.
-/// 400 CHAT_ID_INVALID The provided chat id is invalid.
-/// 400 PEER_ID_INVALID The provided peer id is invalid.
-/// 400 USER_ID_INVALID The provided user ID is invalid.
-/// 400 USER_NOT_PARTICIPANT You're not a member of this supergroup/channel.
 /// See <a href="https://corefork.telegram.org/method/messages.deleteChatUser" />
 ///</summary>
-internal sealed class DeleteChatUserHandler : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestDeleteChatUser, MyTelegram.Schema.IUpdates>,
-    Messages.IDeleteChatUserHandler
+internal sealed class DeleteChatUserHandler(
+    ICommandBus commandBus,
+    IPeerHelper peerHelper)
+    : RpcResultObjectHandler<MyTelegram.Schema.Messages.RequestDeleteChatUser, MyTelegram.Schema.IUpdates>,
+        Messages.IDeleteChatUserHandler
 {
-    protected override Task<IUpdates> HandleCoreAsync(IRequestInput input,
+    protected override async Task<IUpdates> HandleCoreAsync(IRequestInput input,
         RequestDeleteChatUser obj)
     {
-        throw new NotImplementedException();
+        var peerType = peerHelper.GetPeerType(obj.ChatId);
+        if (peerType == PeerType.Channel)
+        {
+            var peer = peerHelper.GetPeer(obj.UserId, input.UserId);
+            var command = new LeaveChannelCommand(
+                ChannelMemberId.Create(obj.ChatId, peer.PeerId),
+                input.ToRequestInfo(),
+                obj.ChatId,
+                peer.PeerId);
+            await commandBus.PublishAsync(command);
+            return null!;
+        }
+
+        throw new RpcException(RpcErrors.RpcErrors400.ChatIdInvalid);
     }
 }
